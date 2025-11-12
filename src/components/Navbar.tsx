@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function Navbar() {
-	const [isAuthed, setIsAuthed] = useState<boolean>(false);
+	const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 	const [isAdmin, setIsAdmin] = useState<boolean>(false);
 	const [username, setUsername] = useState<string | null>(null);
 	useEffect(() => {
@@ -37,10 +37,10 @@ export default function Navbar() {
 			<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
 				<Link href="/" className="text-lg font-semibold">PaperCloud</Link>
 				<nav className="flex items-center gap-3 text-sm">
-					{isAdmin && (
+					{isAuthed === true && isAdmin && (
 						<Link href="/admin/products/new" className="rounded bg-black px-3 py-1.5 text-white">Add Product</Link>
 					)}
-					{isAuthed ? (
+					{isAuthed === true ? (
 						<>
 							{username && (
 								<span className="text-zinc-600">@{username}</span>
@@ -58,12 +58,12 @@ export default function Navbar() {
 								Logout
 							</button>
 						</>
-					) : (
+					) : isAuthed === false ? (
 						<>
 							<Link href="/login" className="rounded border px-3 py-1.5">Login</Link>
 							<Link href="/register" className="rounded border px-3 py-1.5">Register</Link>
 						</>
-					)}
+					) : null}
 				</nav>
 			</div>
 		</header>

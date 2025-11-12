@@ -12,9 +12,9 @@ export default function Home() {
   const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check auth status
-    fetch("/api/auth/me")
-      .then(async (r) => {
+    // Fetch auth and products in parallel
+    Promise.all([
+      fetch("/api/auth/me").then(async (r) => {
         if (r.ok) {
           const data = await r.json();
           const user = data.user;
@@ -27,23 +27,18 @@ export default function Home() {
           setIsAdmin(false);
           setUsername(null);
         }
-      })
-      .catch(() => {
+      }).catch(() => {
         setIsAuthed(false);
         setIsAdmin(false);
         setUsername(null);
-      });
-
-    // Fetch products
-    fetch("/api/products")
-      .then(async (res) => {
+      }),
+      fetch("/api/products").then(async (res) => {
         if (res.ok) {
           const data = await res.json();
           setProducts(data.products || []);
         }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      }).catch(() => {})
+    ]).finally(() => setLoading(false));
   }, []);
 
   return (
