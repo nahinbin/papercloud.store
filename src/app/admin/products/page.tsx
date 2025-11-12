@@ -65,6 +65,7 @@ export default function ProductsPage() {
   };
 
   const handleEdit = (product: Product) => {
+    if (!product.id) return;
     setEditingId(product.id);
     setEditForm({
       title: product.title,
@@ -139,7 +140,7 @@ export default function ProductsPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
+          {products.filter(p => p.id).map((product) => (
             <div key={product.id} className="border rounded-lg p-4">
               {product.imageUrl && (
                 <img
@@ -179,7 +180,7 @@ export default function ProductsPage() {
                   />
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleSave(product.id)}
+                      onClick={() => product.id && handleSave(product.id)}
                       className="flex-1 rounded bg-black px-3 py-1.5 text-white text-sm"
                     >
                       Save
@@ -207,7 +208,7 @@ export default function ProductsPage() {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDelete(product.id)}
+                      onClick={() => product.id && handleDelete(product.id)}
                       className="flex-1 rounded border border-red-300 text-red-600 px-3 py-1.5 text-sm hover:bg-red-50"
                     >
                       Delete
