@@ -11,7 +11,7 @@ async function migrateUsernames() {
     // Find all users without a username
     const usersWithoutUsername = await prisma.user.findMany({
       where: { username: null },
-      select: { id: true, email: true, name: true },
+      select: { id: true, name: true },
     });
     
     if (usersWithoutUsername.length === 0) {
@@ -23,22 +23,8 @@ async function migrateUsernames() {
     
     // Generate usernames for existing users
     for (const user of usersWithoutUsername) {
-      let username;
-      
-      // Try to generate username from email if available
-      if (user.email) {
-        // Extract username part from email (before @)
-        username = user.email.split('@')[0].toLowerCase();
-        // Remove any special characters
-        username = username.replace(/[^a-z0-9_]/g, '');
-        // Ensure it's not empty
-        if (!username) {
-          username = `user_${user.id.substring(0, 8)}`;
-        }
-      } else {
-        // Generate from user ID if no email
-        username = `user_${user.id.substring(0, 8)}`;
-      }
+      // Generate username from user ID
+      let username = `user_${user.id.substring(0, 8)}`;
       
       // Ensure uniqueness by appending number if needed
       let finalUsername = username;

@@ -5,7 +5,6 @@ export interface AuthUser {
   id: string;
   name?: string;
   username: string;
-  email?: string;
   passwordHash: string;
   isAdmin: boolean;
   createdAt: number;
@@ -15,7 +14,6 @@ export interface PublicUser {
   id: string;
   name?: string;
   username: string;
-  email?: string;
   isAdmin: boolean;
   createdAt: number;
 }
@@ -54,7 +52,7 @@ export async function verifyUser(username: string, password: string): Promise<Pu
   return toPublicUser(user);
 }
 
-export function toPublicUser(user: { id: string; name: string | null; username: string | null; email: string | null; isAdmin: boolean; createdAt: Date }): PublicUser {
+export function toPublicUser(user: { id: string; name: string | null; username: string | null; isAdmin: boolean; createdAt: Date }): PublicUser {
   // For existing users without username, generate a temporary one
   // This should only happen during migration
   const username = user.username || `user_${user.id.substring(0, 8)}`;
@@ -63,7 +61,6 @@ export function toPublicUser(user: { id: string; name: string | null; username: 
     id: user.id,
     name: user.name ?? undefined,
     username,
-    email: user.email ?? undefined,
     isAdmin: user.isAdmin,
     createdAt: user.createdAt.getTime(),
   };
