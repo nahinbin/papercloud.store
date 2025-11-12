@@ -1,0 +1,39 @@
+# Vercel ignore file
+# Files and directories to exclude from Vercel deployments
+
+# Development files
+.env.local
+.env.development.local
+.env.test.local
+
+# Build artifacts (Vercel builds these)
+.next/
+out/
+dist/
+
+# Local development
+.vercel/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.tsbuildinfo
+
