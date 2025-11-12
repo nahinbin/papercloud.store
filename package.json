@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
-    "vercel-build": "npx prisma generate && npx prisma db push && next build --webpack",
+    "vercel-build": "npx prisma generate && npx prisma db push && node scripts/migrate-username.js && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate && node scripts/copy-prisma-client.js"
