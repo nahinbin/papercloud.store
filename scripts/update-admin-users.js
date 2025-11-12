@@ -1,14 +1,19 @@
-// Script to ensure all users with username "@admin" have isAdmin set to true
+// Script to ensure all users with username "@admin" or "admin" have isAdmin set to true
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function updateAdminUsers() {
   try {
-    console.log('🔄 Checking for @admin users...');
+    console.log('🔄 Checking for admin users...');
     
-    // Find all users with username @admin
+    // Find all users with username @admin or admin
     const adminUsers = await prisma.user.findMany({
-      where: { username: "@admin" },
+      where: { 
+        OR: [
+          { username: "@admin" },
+          { username: "admin" }
+        ]
+      },
       select: { id: true, username: true, isAdmin: true },
     });
     
@@ -26,9 +31,9 @@ async function updateAdminUsers() {
           where: { id: user.id },
           data: { isAdmin: true },
         });
-        console.log(`✅ Updated user ${user.id} (@admin) to admin status`);
+        console.log(`✅ Updated user ${user.id} (${user.username}) to admin status`);
       } else {
-        console.log(`✅ User ${user.id} (@admin) already has admin status`);
+        console.log(`✅ User ${user.id} (${user.username}) already has admin status`);
       }
     }
     

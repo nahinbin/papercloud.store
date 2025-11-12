@@ -16,8 +16,8 @@ export default function Navbar() {
 					const user = data.user;
 					setIsAuthed(true);
 					setUsername(user?.username || null);
-					// Check if admin by isAdmin flag OR username is @admin
-					setIsAdmin(user?.isAdmin || user?.username === "@admin" || false);
+					// Check if admin by isAdmin flag OR username is @admin or admin
+					setIsAdmin(user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false);
 				} else {
 					setIsAuthed(false);
 					setIsAdmin(false);
