@@ -8,12 +8,25 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     // Check auth status
     fetch("/api/auth/me")
-      .then(async (r) => setIsAuthed(r.ok))
-      .catch(() => setIsAuthed(false));
+      .then(async (r) => {
+        if (r.ok) {
+          const data = await r.json();
+          setIsAuthed(true);
+          setIsAdmin(data.user?.isAdmin || false);
+        } else {
+          setIsAuthed(false);
+          setIsAdmin(false);
+        }
+      })
+      .catch(() => {
+        setIsAuthed(false);
+        setIsAdmin(false);
+      });
 
     // Fetch products
     fetch("/api/products")
@@ -35,7 +48,7 @@ export default function Home() {
           <p className="mt-2 text-zinc-600">Welcome back! Browse our products below.</p>
         )}
         {isAuthed === false && (
-          <p className="mt-2 text-zinc-600">Browse our products. <Link href="/login" className="underline">Login</Link> to add new products.</p>
+          <p className="mt-2 text-zinc-600">Browse our products below. <Link href="/login" className="underline">Login</Link> or <Link href="/register" className="underline">register</Link> if you wish to create an account.</p>
         )}
 
         {loading ? (
@@ -43,7 +56,7 @@ export default function Home() {
         ) : products.length === 0 ? (
           <div className="mt-8">
             <p className="text-zinc-600">No products available yet.</p>
-            {isAuthed && (
+            {isAdmin && (
               <Link href="/admin/products/new" className="mt-4 inline-block rounded bg-black px-4 py-2 text-white">
                 Add First Product
               </Link>

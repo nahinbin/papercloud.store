@@ -38,6 +38,9 @@ if (!res.ok) {
   if (res.status === 401) {
     throw new Error("You must be logged in to create products. Please login or register first.");
   }
+  if (res.status === 403) {
+    throw new Error("Only admins can create products.");
+  }
   throw new Error(data?.error || "Failed to save");
 }
 const data = await res.json();

@@ -4,15 +4,19 @@ import { prisma } from "./prisma";
 export interface AuthUser {
   id: string;
   name?: string;
-  email: string;
+  username: string;
+  email?: string;
   passwordHash: string;
+  isAdmin: boolean;
   createdAt: number;
 }
 
 export interface PublicUser {
   id: string;
   name?: string;
-  email: string;
+  username: string;
+  email?: string;
+  isAdmin: boolean;
   createdAt: number;
 }
 
@@ -20,37 +24,43 @@ function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
-export async function createUser(input: { name?: string; email: string; password: string }): Promise<PublicUser> {
+export async function createUser(input: { name?: string; username: string; password: string }): Promise<PublicUser> {
   const existing = await prisma.user.findUnique({
-    where: { email: input.email.toLowerCase() },
+    where: { username: input.username },
   });
-  if (existing) throw new Error("Email already registered");
+  if (existing) throw new Error("Username already taken");
+  
+  // Auto-promote @admin username to admin
+  const isAdmin = input.username === "@admin";
   
   const user = await prisma.user.create({
     data: {
       name: input.name,
-      email: input.email.toLowerCase(),
+      username: input.username,
       passwordHash: hashPassword(input.password),
+      isAdmin,
     },
   });
   
   return toPublicUser(user);
 }
 
-export async function verifyUser(email: string, password: string): Promise<PublicUser | null> {
+export async function verifyUser(username: string, password: string): Promise<PublicUser | null> {
   const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
+    where: { username },
   });
   if (!user) return null;
   if (user.passwordHash !== hashPassword(password)) return null;
   return toPublicUser(user);
 }
 
-export function toPublicUser(user: { id: string; name: string | null; email: string; createdAt: Date }): PublicUser {
+export function toPublicUser(user: { id: string; name: string | null; username: string; email: string | null; isAdmin: boolean; createdAt: Date }): PublicUser {
   return {
     id: user.id,
     name: user.name ?? undefined,
-    email: user.email,
+    username: user.username,
+    email: user.email ?? undefined,
+    isAdmin: user.isAdmin,
     createdAt: user.createdAt.getTime(),
   };
 }
