@@ -38,7 +38,10 @@ export default function Navbar() {
 				<Link href="/" className="text-lg font-semibold">PaperCloud</Link>
 				<nav className="flex items-center gap-3 text-sm">
 					{isAuthed === true && isAdmin && (
-						<Link href="/admin/products/new" className="rounded bg-black px-3 py-1.5 text-white">Add Product</Link>
+						<>
+							<Link href="/admin" className="rounded bg-zinc-800 px-3 py-1.5 text-white">Admin</Link>
+							<Link href="/admin/products/new" className="rounded bg-black px-3 py-1.5 text-white">Add Product</Link>
+						</>
 					)}
 					{isAuthed === true ? (
 						<>
