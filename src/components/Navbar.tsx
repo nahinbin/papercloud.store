@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
+import navLogo from "./nav.png";
 
 export default function Navbar() {
 	const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
@@ -35,7 +37,9 @@ export default function Navbar() {
 	return (
 		<header className="w-full border-b bg-white">
 			<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-				<Link href="/" className="text-lg font-semibold">PaperCloud</Link>
+				<Link href="/" className="flex items-center">
+					<Image src={navLogo} alt="PaperCloud" className="h-8 w-auto" unoptimized />
+				</Link>
 				<nav className="flex items-center gap-3 text-sm">
 					{isAuthed === true && isAdmin && (
 						<>
