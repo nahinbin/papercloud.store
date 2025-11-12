@@ -9,6 +9,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
     // Check auth status
@@ -16,16 +17,21 @@ export default function Home() {
       .then(async (r) => {
         if (r.ok) {
           const data = await r.json();
+          const user = data.user;
           setIsAuthed(true);
-          setIsAdmin(data.user?.isAdmin || false);
+          setUsername(user?.username || null);
+          // Check if admin by isAdmin flag OR username is @admin
+          setIsAdmin(user?.isAdmin || user?.username === "@admin" || false);
         } else {
           setIsAuthed(false);
           setIsAdmin(false);
+          setUsername(null);
         }
       })
       .catch(() => {
         setIsAuthed(false);
         setIsAdmin(false);
+        setUsername(null);
       });
 
     // Fetch products
@@ -45,7 +51,9 @@ export default function Home() {
       <div className="mx-auto max-w-4xl px-6 py-16">
         <h1 className="text-2xl font-semibold">PaperCloud Store</h1>
         {isAuthed === true && (
-          <p className="mt-2 text-zinc-600">Welcome back! Browse our products below.</p>
+          <p className="mt-2 text-zinc-600">
+            Welcome back{username ? `, @${username}` : ""}! Browse our products below.
+          </p>
         )}
         {isAuthed === false && (
           <p className="mt-2 text-zinc-600">Browse our products below. <Link href="/login" className="underline">Login</Link> or <Link href="/register" className="underline">register</Link> if you wish to create an account.</p>

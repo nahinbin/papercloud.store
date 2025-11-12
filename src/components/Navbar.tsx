@@ -6,22 +6,28 @@ import { useEffect, useState } from "react";
 export default function Navbar() {
 	const [isAuthed, setIsAuthed] = useState<boolean>(false);
 	const [isAdmin, setIsAdmin] = useState<boolean>(false);
+	const [username, setUsername] = useState<string | null>(null);
 	useEffect(() => {
  		let cancelled = false;
  		fetch("/api/auth/me").then(async (r) => {
  			if (!cancelled) {
 				if (r.ok) {
 					const data = await r.json();
+					const user = data.user;
 					setIsAuthed(true);
-					setIsAdmin(data.user?.isAdmin || false);
+					setUsername(user?.username || null);
+					// Check if admin by isAdmin flag OR username is @admin
+					setIsAdmin(user?.isAdmin || user?.username === "@admin" || false);
 				} else {
 					setIsAuthed(false);
 					setIsAdmin(false);
+					setUsername(null);
 				}
 			}
  		}).catch(() => {
 			setIsAuthed(false);
 			setIsAdmin(false);
+			setUsername(null);
 		});
  		return () => { cancelled = true; };
  	}, []);
@@ -35,17 +41,23 @@ export default function Navbar() {
 						<Link href="/admin/products/new" className="rounded bg-black px-3 py-1.5 text-white">Add Product</Link>
 					)}
 					{isAuthed ? (
-						<button
-							onClick={async () => {
-								await fetch("/api/auth/logout", { method: "POST" });
-								setIsAuthed(false);
-								setIsAdmin(false);
-								location.reload();
-							}}
-							className="rounded border px-3 py-1.5"
-						>
-							Logout
-						</button>
+						<>
+							{username && (
+								<span className="text-zinc-600">@{username}</span>
+							)}
+							<button
+								onClick={async () => {
+									await fetch("/api/auth/logout", { method: "POST" });
+									setIsAuthed(false);
+									setIsAdmin(false);
+									setUsername(null);
+									location.reload();
+								}}
+								className="rounded border px-3 py-1.5"
+							>
+								Logout
+							</button>
+						</>
 					) : (
 						<>
 							<Link href="/login" className="rounded border px-3 py-1.5">Login</Link>

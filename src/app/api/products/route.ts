@@ -15,7 +15,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!user.isAdmin) {
+  // Check if admin by isAdmin flag OR username is @admin
+  const isAdmin = user.isAdmin || user.username === "@admin";
+  if (!isAdmin) {
     return NextResponse.json({ error: "Only admins can create products" }, { status: 403 });
   }
   const body = await request.json().catch(() => null);
