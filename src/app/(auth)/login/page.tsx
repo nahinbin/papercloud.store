@@ -9,6 +9,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Filter out invalid characters in real-time (lowercase, numbers, underscore only)
+    const filtered = value.replace(/[^a-z0-9_]/g, '').toLowerCase();
+    setUsername(filtered);
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -38,7 +45,12 @@ export default function LoginPage() {
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
           <label className="mb-1 block text-sm">Username</label>
-          <input className="w-full rounded border px-3 py-2" value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input 
+            className="w-full rounded border px-3 py-2" 
+            value={username} 
+            onChange={handleUsernameChange}
+            placeholder="Only lowercase letters, numbers, and _"
+          />
         </div>
         <div>
           <label className="mb-1 block text-sm">Password</label>

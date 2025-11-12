@@ -2,6 +2,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+// Username validation: only lowercase letters, numbers, and underscore
+const isValidUsername = (username: string): boolean => {
+  return /^[a-z0-9_]+$/.test(username);
+};
+
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -9,10 +14,34 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Filter out invalid characters in real-time
+    const filtered = value.replace(/[^a-z0-9_]/g, '').toLowerCase();
+    setUsername(filtered);
+    
+    // Validate and show error immediately
+    if (filtered.length > 0 && !isValidUsername(filtered)) {
+      setUsernameError("Username can only contain lowercase letters, numbers, and underscores");
+    } else if (filtered.length === 0) {
+      setUsernameError(null);
+    } else {
+      setUsernameError(null);
+    }
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    
+    // Validate username before submitting
+    if (!username || !isValidUsername(username)) {
+      setUsernameError("Username can only contain lowercase letters, numbers, and underscores");
+      return;
+    }
+    
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
@@ -43,7 +72,18 @@ export default function RegisterPage() {
         </div>
         <div>
           <label className="mb-1 block text-sm">Username</label>
-          <input className="w-full rounded border px-3 py-2" value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input 
+            className={`w-full rounded border px-3 py-2 ${usernameError ? "border-red-500" : ""}`}
+            value={username} 
+            onChange={handleUsernameChange}
+            placeholder="Only lowercase letters, numbers, and _"
+          />
+          {usernameError && (
+            <p className="mt-1 text-sm text-red-600">{usernameError}</p>
+          )}
+          {!usernameError && username.length > 0 && (
+            <p className="mt-1 text-xs text-green-600">✓ Valid username format</p>
+          )}
         </div>
         <div>
           <label className="mb-1 block text-sm">Password</label>
