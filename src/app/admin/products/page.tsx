@@ -13,6 +13,8 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ title: "", price: "", description: "", imageUrl: "" });
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -73,10 +75,47 @@ export default function ProductsPage() {
       description: product.description || "",
       imageUrl: product.imageUrl || "",
     });
+    setEditImageFile(null);
+    setEditImagePreview(null);
+  };
+
+  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditImageFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSave = async (productId: string) => {
     try {
+      let imageUrl = editForm.imageUrl;
+      
+      // Upload new image if provided
+      if (editImageFile) {
+        const formData = new FormData();
+        formData.append("file", editImageFile);
+        
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        
+        if (!uploadRes.ok) {
+          const uploadData = await uploadRes.json().catch(() => ({}));
+          alert(uploadData?.error || "Failed to upload image");
+          return;
+        }
+        
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.url;
+      }
+
       const res = await fetch(`/api/admin/products/${productId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -84,13 +123,15 @@ export default function ProductsPage() {
           title: editForm.title,
           price: parseFloat(editForm.price),
           description: editForm.description || undefined,
-          imageUrl: editForm.imageUrl || undefined,
+          imageUrl: imageUrl || undefined,
         }),
       });
       if (res.ok) {
         const data = await res.json();
         setProducts(products.map(p => p.id === productId ? data.product : p));
         setEditingId(null);
+        setEditImageFile(null);
+        setEditImagePreview(null);
       } else {
         const data = await res.json().catch(() => ({}));
         alert(data.error || "Failed to update product");
@@ -172,12 +213,28 @@ export default function ProductsPage() {
                     placeholder="Description"
                     rows={3}
                   />
-                  <input
-                    className="w-full border rounded px-2 py-1 text-sm"
-                    value={editForm.imageUrl}
-                    onChange={(e) => setEditForm({ ...editForm, imageUrl: e.target.value })}
-                    placeholder="Image URL"
-                  />
+                  <div>
+                    <label className="block text-xs mb-1 text-gray-600">Product Image</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditImageChange}
+                      className="w-full border rounded px-2 py-1 text-sm"
+                    />
+                    <p className="text-xs text-zinc-400 mt-1">Upload new image to replace current one</p>
+                    {(editImagePreview || editForm.imageUrl) && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-600 mb-1">
+                          {editImagePreview ? "New image preview:" : "Current image:"}
+                        </p>
+                        <img 
+                          src={editImagePreview || editForm.imageUrl || ""} 
+                          alt="Preview" 
+                          className="w-full h-32 object-cover rounded border" 
+                        />
+                      </div>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => product.id && handleSave(product.id)}
