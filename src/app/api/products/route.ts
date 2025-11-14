@@ -32,11 +32,34 @@ export async function POST(request: Request) {
   if (!body || typeof body.title !== "string" || typeof body.price !== "number") {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
+  
+  // Handle image data - convert base64 data URL to buffer if provided
+  let imageData: Buffer | undefined = undefined;
+  let imageMimeType: string | undefined = undefined;
+  
+  if (body.imageData) {
+    // If it's a base64 data URL (data:image/...;base64,...)
+    if (typeof body.imageData === 'string' && body.imageData.startsWith('data:')) {
+      const matches = body.imageData.match(/^data:([^;]+);base64,(.+)$/);
+      if (matches) {
+        imageMimeType = matches[1];
+        const base64Data = matches[2];
+        imageData = Buffer.from(base64Data, 'base64');
+      }
+    } else if (body.imageData && body.imageMimeType) {
+      // If it's already a base64 string without data URL prefix
+      imageData = Buffer.from(body.imageData, 'base64');
+      imageMimeType = body.imageMimeType;
+    }
+  }
+  
   const product = await createProduct({
     title: body.title,
     price: body.price,
     description: body.description || undefined,
     imageUrl: body.imageUrl || undefined,
+    imageData: imageData,
+    imageMimeType: imageMimeType,
     category: body.category || undefined,
     brand: body.brand || undefined,
     sku: body.sku || undefined,

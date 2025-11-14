@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
 import { cookies } from "next/headers";
 import { getUserBySessionToken } from "@/lib/authDb";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
@@ -38,33 +37,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "File size too large. Maximum size is 5MB." }, { status: 400 });
     }
 
+    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 15);
-    const extension = file.name.split(".").pop() || "jpg";
-    const filename = `${timestamp}-${randomString}.${extension}`;
-
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), "public", "uploads", "products");
-    try {
-      await mkdir(uploadsDir, { recursive: true });
-    } catch (error) {
-      // Directory might already exist, that's fine
-    }
-
-    // Save file
-    const filepath = join(uploadsDir, filename);
-    await writeFile(filepath, buffer);
-
-    // Return the public URL
-    const publicUrl = `/uploads/products/${filename}`;
-    return NextResponse.json({ url: publicUrl }, { status: 200 });
+    // Store image in database
+    // We'll create a temporary product record or use a dedicated image table
+    // For now, we'll return the image data as base64 for the client to store with the product
+    // Actually, let's create a simple approach: return the image data and mime type
+    // The product creation will store it directly
+    
+    // Convert buffer to base64 for JSON response (or we can return binary)
+    // Actually, for now we'll return a reference ID that can be used
+    // But the better approach is to store it directly when creating the product
+    
+    // For immediate use, let's return the data as base64 data URL
+    const base64 = buffer.toString('base64');
+    const dataUrl = `data:${file.type};base64,${base64}`;
+    
+    return NextResponse.json({ 
+      url: dataUrl,
+      mimeType: file.type,
+      size: file.size
+    }, { status: 200 });
   } catch (error: any) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
   }
 }
-

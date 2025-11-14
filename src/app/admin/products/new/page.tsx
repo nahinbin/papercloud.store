@@ -58,7 +58,8 @@ export default function NewProductPage() {
     }
     setLoading(true);
     try {
-      let imageUrl = "";
+      let imageData: string | undefined = undefined;
+      let imageMimeType: string | undefined = undefined;
       
       if (imageFile) {
         const formData = new FormData();
@@ -75,7 +76,9 @@ export default function NewProductPage() {
         }
         
         const uploadData = await uploadRes.json();
-        imageUrl = uploadData.url;
+        // Upload route returns data URL with base64
+        imageData = uploadData.url; // This is the data URL
+        imageMimeType = uploadData.mimeType;
       }
 
       const res = await fetch("/api/products", {
@@ -84,7 +87,8 @@ export default function NewProductPage() {
         body: JSON.stringify({
           title,
           price: numericPrice,
-          imageUrl,
+          imageData: imageData,
+          imageMimeType: imageMimeType,
           description: description || undefined,
           category: category || undefined,
           brand: brand || undefined,

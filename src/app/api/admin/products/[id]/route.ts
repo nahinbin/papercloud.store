@@ -38,6 +38,26 @@ export async function PATCH(
   }
 
   try {
+    // Handle image data - convert base64 data URL to buffer if provided
+    let imageData: Buffer | null = null;
+    let imageMimeType: string | null = null;
+    
+    if (body.imageData) {
+      // If it's a base64 data URL (data:image/...;base64,...)
+      if (typeof body.imageData === 'string' && body.imageData.startsWith('data:')) {
+        const matches = body.imageData.match(/^data:([^;]+);base64,(.+)$/);
+        if (matches) {
+          imageMimeType = matches[1];
+          const base64Data = matches[2];
+          imageData = Buffer.from(base64Data, 'base64');
+        }
+      } else if (body.imageData && body.imageMimeType) {
+        // If it's already a base64 string without data URL prefix
+        imageData = Buffer.from(body.imageData, 'base64');
+        imageMimeType = body.imageMimeType;
+      }
+    }
+    
     const product = await prisma.product.update({
       where: { id },
       data: {
@@ -45,6 +65,8 @@ export async function PATCH(
         price: body.price,
         description: body.description || null,
         imageUrl: body.imageUrl || null,
+        imageData: imageData,
+        imageMimeType: imageMimeType,
         category: body.category || null,
         brand: body.brand || null,
         sku: body.sku || null,
@@ -71,7 +93,8 @@ export async function PATCH(
         title: product.title,
         description: product.description ?? undefined,
         price: product.price,
-        imageUrl: product.imageUrl ?? undefined,
+        imageUrl: product.imageData ? `/api/products/${product.id}/image` : (product.imageUrl ?? undefined),
+        imageMimeType: product.imageMimeType ?? undefined,
         category: product.category ?? undefined,
         brand: product.brand ?? undefined,
         sku: product.sku ?? undefined,

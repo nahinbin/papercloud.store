@@ -4,6 +4,8 @@ export interface Product {
   description?: string;
   price: number;
   imageUrl?: string;
+  imageData?: Buffer | Uint8Array;
+  imageMimeType?: string;
   category?: string;
   brand?: string;
   sku?: string;
