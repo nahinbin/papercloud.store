@@ -3,9 +3,17 @@ import { cookies } from "next/headers";
 import { createProduct, listProducts } from "@/lib/productDb";
 import { getUserBySessionToken } from "@/lib/authDb";
 
+export const revalidate = 60; // Revalidate every 60 seconds
+
 export async function GET() {
   const products = await listProducts();
-  return NextResponse.json({ products });
+  const response = NextResponse.json({ products });
+  // Add caching headers
+  response.headers.set(
+    "Cache-Control",
+    "public, s-maxage=60, stale-while-revalidate=120"
+  );
+  return response;
 }
 
 export async function POST(request: Request) {
