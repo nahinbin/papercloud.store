@@ -73,3 +73,35 @@ model Logo {
   @@map("logos")
 }
 
+model Order {
+  id                String      @id @default(cuid())
+  userId            String?     @map("user_id")
+  email             String
+  shippingName      String      @map("shipping_name")
+  shippingAddress   String      @map("shipping_address")
+  shippingCity      String      @map("shipping_city")
+  shippingState     String?     @map("shipping_state")
+  shippingZip       String      @map("shipping_zip")
+  shippingCountry   String      @map("shipping_country")
+  totalAmount       Float       @map("total_amount")
+  status            String      @default("pending") // pending, paid, shipped, delivered, cancelled
+  braintreeTxId     String?     @map("braintree_tx_id")
+  items             OrderItem[]
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String   @map("order_id")
+  productId   String   @map("product_id")
+  productTitle String  @map("product_title")
+  productPrice Float   @map("product_price")
+  quantity    Int
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+

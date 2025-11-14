@@ -3,12 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useCart } from "@/contexts/CartContext";
 
 export default function Navbar() {
 	const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 	const [isAdmin, setIsAdmin] = useState<boolean>(false);
 	const [username, setUsername] = useState<string | null>(null);
 	const [logoUrl, setLogoUrl] = useState<string>("/nav.png");
+	const { getItemCount } = useCart();
+	const cartItemCount = getItemCount();
 	
 	useEffect(() => {
 		// Fetch current logo
@@ -35,7 +38,6 @@ export default function Navbar() {
 					const user = data.user;
 					setIsAuthed(true);
 					setUsername(user?.username || null);
-					// Check if admin by isAdmin flag OR username is @admin or admin
 					setIsAdmin(user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false);
 				} else {
 					setIsAuthed(false);
@@ -43,7 +45,7 @@ export default function Navbar() {
 					setUsername(null);
 				}
 			}
- 		}).catch(() => {
+		}).catch(() => {
 			setIsAuthed(false);
 			setIsAdmin(false);
 			setUsername(null);
@@ -58,14 +60,29 @@ export default function Navbar() {
 					<Image src={logoUrl} alt="PaperCloud" width={120} height={32} className="h-8 w-auto" />
 				</Link>
 				<nav className="flex items-center gap-3 text-sm">
-					{isAuthed === true && isAdmin && (
-						<>
-							<Link href="/admin" className="rounded bg-zinc-800 px-3 py-1.5 text-white">Admin</Link>
-							<Link href="/admin/products/new" className="rounded bg-black px-3 py-1.5 text-white">Add Product</Link>
-						</>
-					)}
+					<Link
+						href="/cart"
+						className="relative rounded border px-3 py-1.5 hover:bg-zinc-50 transition-colors"
+						title="Shopping Cart"
+					>
+						🛒 Cart
+						{cartItemCount > 0 && (
+							<span className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+								{cartItemCount}
+							</span>
+						)}
+					</Link>
 					{isAuthed === true ? (
 						<>
+							{isAdmin && (
+								<Link 
+									href="/admin" 
+									className="rounded bg-zinc-100 px-3 py-1.5 text-zinc-700 hover:bg-zinc-200 transition-colors"
+									title="Admin Dashboard"
+								>
+									⚙️ Dashboard
+								</Link>
+							)}
 							{username && (
 								<span className="text-zinc-600">@{username}</span>
 							)}

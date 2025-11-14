@@ -5,10 +5,16 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
+interface Stats {
+  users: number;
+  products: number;
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -37,6 +43,18 @@ export default function AdminDashboard() {
         router.push("/");
       })
       .finally(() => setLoading(false));
+    
+    // Fetch stats
+    fetch("/api/admin/stats")
+      .then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data.stats);
+        }
+      })
+      .catch(() => {
+        // Ignore errors
+      });
     
     // Fetch current logo
     fetch("/api/logo")
@@ -186,29 +204,48 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Link
-            href="/admin/products"
-            className="block p-6 border-2 border-zinc-200 rounded-lg hover:border-black hover:shadow-lg transition-all"
-          >
-            <h2 className="text-xl font-semibold mb-2">Products</h2>
-            <p className="text-sm text-zinc-600">Manage all products - view, edit, delete, and create new products</p>
-          </Link>
+          <div className="p-6 border-2 border-zinc-200 rounded-lg bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Products</h2>
+              {stats && (
+                <span className="text-2xl font-bold text-zinc-800">{stats.products}</span>
+              )}
+            </div>
+            <p className="text-sm text-zinc-600 mb-4">Total products in store</p>
+            <Link
+              href="/admin/products"
+              className="inline-block rounded bg-black px-4 py-2 text-white text-sm hover:bg-zinc-800 transition-colors"
+            >
+              Manage Products →
+            </Link>
+          </div>
 
-          <Link
-            href="/admin/users"
-            className="block p-6 border-2 border-zinc-200 rounded-lg hover:border-black hover:shadow-lg transition-all"
-          >
-            <h2 className="text-xl font-semibold mb-2">Users</h2>
-            <p className="text-sm text-zinc-600">View all users, manage accounts, and control access</p>
-          </Link>
+          <div className="p-6 border-2 border-zinc-200 rounded-lg bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Users</h2>
+              {stats && (
+                <span className="text-2xl font-bold text-zinc-800">{stats.users}</span>
+              )}
+            </div>
+            <p className="text-sm text-zinc-600 mb-4">Total registered users</p>
+            <Link
+              href="/admin/users"
+              className="inline-block rounded bg-black px-4 py-2 text-white text-sm hover:bg-zinc-800 transition-colors"
+            >
+              Manage Users →
+            </Link>
+          </div>
 
-          <Link
-            href="/admin/products/new"
-            className="block p-6 border-2 border-zinc-200 rounded-lg hover:border-black hover:shadow-lg transition-all"
-          >
-            <h2 className="text-xl font-semibold mb-2">Add Product</h2>
-            <p className="text-sm text-zinc-600">Create a new product for your store</p>
-          </Link>
+          <div className="p-6 border-2 border-zinc-200 rounded-lg bg-white">
+            <h2 className="text-xl font-semibold mb-4">Add Product</h2>
+            <p className="text-sm text-zinc-600 mb-4">Create a new product for your store</p>
+            <Link
+              href="/admin/products/new"
+              className="inline-block rounded bg-black px-4 py-2 text-white text-sm hover:bg-zinc-800 transition-colors"
+            >
+              Create Product →
+            </Link>
+          </div>
         </div>
 
         <div className="mt-8">

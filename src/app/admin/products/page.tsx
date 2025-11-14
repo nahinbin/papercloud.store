@@ -183,13 +183,6 @@ export default function ProductsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.filter(p => p.id).map((product) => (
             <div key={product.id} className="border rounded-lg p-4">
-              {product.imageUrl && (
-                <img
-                  src={product.imageUrl}
-                  alt={product.title}
-                  className="w-full h-48 object-cover rounded mb-3"
-                />
-              )}
               {editingId === product.id ? (
                 <div className="space-y-3">
                   <input
@@ -252,11 +245,14 @@ export default function ProductsPage() {
                 </div>
               ) : (
                 <>
+                  {product.brand && (
+                    <p className="text-sm text-zinc-500 mb-1">{product.brand}</p>
+                  )}
                   <h3 className="font-semibold">{product.title}</h3>
                   <p className="mt-1 text-lg font-medium">${product.price.toFixed(2)}</p>
-                  {product.description && (
-                    <p className="mt-2 text-sm text-zinc-600 line-clamp-2">{product.description}</p>
-                  )}
+                  <p className="mt-1 text-sm text-zinc-600">
+                    Stock: {product.stockQuantity ?? 0}
+                  </p>
                   <div className="mt-4 flex gap-2">
                     <button
                       onClick={() => handleEdit(product)}

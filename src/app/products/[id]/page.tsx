@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { getProductById } from "@/lib/productDb";
+import AddToCartButton from "@/components/AddToCartButton";
 
 export const revalidate = 60;
 
@@ -187,19 +188,13 @@ export default async function PublicProductDetailPage({
 
             {/* Buy Button */}
             <div className="pt-4">
-              <button 
-                className={`w-full py-4 rounded-lg font-semibold text-lg ${
-                  product.stockQuantity === 0 
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                    : 'bg-black text-white hover:bg-gray-800'
-                }`}
-                disabled={product.stockQuantity === 0}
-              >
-                {product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-              </button>
-              <p className="text-xs text-zinc-500 mt-2 text-center">
-                Secure checkout • Free returns • Fast shipping
-              </p>
+              <AddToCartButton 
+                productId={product.id || ""}
+                title={product.title}
+                price={product.price}
+                imageUrl={product.imageUrl}
+                stockQuantity={product.stockQuantity}
+              />
             </div>
           </div>
         </div>

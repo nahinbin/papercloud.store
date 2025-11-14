@@ -1,0 +1,603 @@
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useCart } from "@/contexts/CartContext";
+
+declare global {
+  interface Window {
+    braintree: any;
+  }
+}
+
+export default function CheckoutPage() {
+  const router = useRouter();
+  const { items, getTotal, clearCart } = useCart();
+  const [clientToken, setClientToken] = useState<string | null>(null);
+  const [dropinInstance, setDropinInstance] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scriptLoadedRef = useRef(false);
+  const initializedRef = useRef(false);
+  
+  const total = getTotal();
+  const isFreeOrder = total === 0;
+
+  const [shippingInfo, setShippingInfo] = useState({
+    email: "",
+    name: "",
+    address: "",
+    city: "",
+    state: "",
+    zip: "",
+    country: "US",
+  });
+
+  // Load Braintree script (only if order has a price)
+  useEffect(() => {
+    if (isFreeOrder) {
+      setLoading(false);
+      return;
+    }
+    
+    if (scriptLoadedRef.current || document.querySelector('script[src*="braintreegateway.com"]')) {
+      scriptLoadedRef.current = true;
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://js.braintreegateway.com/web/dropin/1.33.7/js/dropin.min.js";
+    script.async = true;
+    script.onload = () => {
+      scriptLoadedRef.current = true;
+      // Force re-check for initialization
+      setTimeout(() => {
+        if (containerRef.current && !initializedRef.current) {
+          // Trigger initialization check
+          const event = new Event('braintree-ready');
+          window.dispatchEvent(event);
+        }
+      }, 100);
+    };
+    script.onerror = () => {
+      console.error("Failed to load Braintree script");
+      setError("Failed to load payment script. Please refresh the page.");
+      setLoading(false);
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      // Don't remove script on cleanup
+    };
+  }, [isFreeOrder]);
+
+  // Initialize Braintree Drop-in when container and script are ready
+  useEffect(() => {
+    if (items.length === 0) {
+      router.push("/cart");
+      return;
+    }
+
+    // Skip Braintree initialization for free orders
+    if (isFreeOrder) {
+      setLoading(false);
+      return;
+    }
+
+    let mounted = true;
+
+    const initializeBraintree = async () => {
+      // Wait for container to be available
+      if (!containerRef.current) {
+        console.log("Waiting for container...");
+        return;
+      }
+
+      // Wait for Braintree script
+      if (!window.braintree) {
+        console.log("Waiting for Braintree script...");
+        return;
+      }
+
+      // Don't initialize if already done
+      if (initializedRef.current) {
+        console.log("Already initialized");
+        return;
+      }
+
+      const container = containerRef.current;
+      
+      // Get client token first
+      try {
+        setLoading(true);
+        const res = await fetch("/api/braintree/token");
+        
+        if (!res.ok) {
+          throw new Error(`Failed to fetch token: ${res.status}`);
+        }
+
+        const data = await res.json();
+        
+        if (data.error) {
+          throw new Error(data.details || data.error || "Failed to get payment token");
+        }
+        
+        if (!data.clientToken) {
+          throw new Error("No client token received from server");
+        }
+
+        setClientToken(data.clientToken);
+
+        // Wait for next tick to ensure React has finished rendering
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        if (!mounted || !containerRef.current) return;
+
+        // Aggressively clear container
+        const containerEl = containerRef.current;
+        
+        // Remove all children
+        while (containerEl.firstChild) {
+          containerEl.removeChild(containerEl.firstChild);
+        }
+        
+        // Clear all content
+        containerEl.innerHTML = '';
+        containerEl.textContent = '';
+        
+        // Remove any attributes that might have content
+        Array.from(containerEl.attributes).forEach(attr => {
+          if (attr.name !== 'id' && attr.name !== 'class' && attr.name !== 'ref') {
+            containerEl.removeAttribute(attr.name);
+          }
+        });
+
+        // Wait one more tick
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        if (!mounted || !containerRef.current) return;
+
+        // Get container and ensure it's completely empty RIGHT before initialization
+        const finalContainer = containerRef.current;
+        
+        // Aggressively clear - multiple passes
+        for (let i = 0; i < 3; i++) {
+          // Remove all children
+          while (finalContainer.firstChild) {
+            finalContainer.removeChild(finalContainer.firstChild);
+          }
+          // Clear all content
+          finalContainer.innerHTML = '';
+          finalContainer.textContent = '';
+          // Remove all attributes except id and class
+          const attrsToKeep = ['id', 'class', 'ref'];
+          Array.from(finalContainer.attributes).forEach(attr => {
+            if (!attrsToKeep.includes(attr.name)) {
+              finalContainer.removeAttribute(attr.name);
+            }
+          });
+        }
+        
+        // Wait for DOM to settle
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Final check - if still has children, something is wrong
+        if (finalContainer.children.length > 0) {
+          console.error("Container still has children after clearing:", finalContainer.children.length);
+          // Last resort - replace the container
+          const parent = finalContainer.parentNode;
+          if (parent) {
+            const newContainer = document.createElement('div');
+            newContainer.id = 'braintree-dropin-container';
+            newContainer.className = finalContainer.className;
+            parent.replaceChild(newContainer, finalContainer);
+            containerRef.current = newContainer;
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+
+        console.log("Initializing Braintree Drop-in...");
+        
+        // Initialize Braintree with error handling
+        try {
+          // Get or create a completely fresh container
+          let containerEl = containerRef.current;
+          
+          if (!containerEl) {
+            throw new Error("Container element not found");
+          }
+          
+          // Create a brand new empty container to replace the old one
+          const parent = containerEl.parentNode;
+          if (parent) {
+            // Remove old container
+            parent.removeChild(containerEl);
+            
+            // Create completely new empty container
+            const newContainer = document.createElement('div');
+            newContainer.id = 'braintree-dropin-container';
+            newContainer.className = 'mb-6 min-h-[200px]';
+            newContainer.setAttribute('suppressHydrationWarning', 'true');
+            
+            // Insert new container
+            parent.appendChild(newContainer);
+            containerRef.current = newContainer;
+            containerEl = newContainer;
+            
+            // Wait for DOM to update
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          
+          // Final verification - container MUST be empty
+          if (containerEl.children.length > 0 || containerEl.textContent?.trim() || containerEl.innerHTML.trim()) {
+            console.error("New container still has content:", {
+              children: containerEl.children.length,
+              textContent: containerEl.textContent,
+              innerHTML: containerEl.innerHTML.substring(0, 100)
+            });
+            setError("Payment container is not ready. Please refresh the page.");
+            setLoading(false);
+            return;
+          }
+          
+          console.log("Container verified empty, initializing Braintree...");
+          
+          window.braintree.dropin.create(
+            {
+              authorization: data.clientToken,
+              container: containerEl,
+              card: {
+                cardholderName: {
+                  required: true,
+                },
+              },
+            },
+            (err: any, instance: any) => {
+              if (!mounted) return;
+              
+              if (err) {
+                console.error("Braintree Drop-in error:", err);
+                console.error("Error details:", JSON.stringify(err, null, 2));
+                
+                let errorMsg = "Failed to initialize payment form";
+                
+                // Handle different error types
+                if (err.message) {
+                  errorMsg += ": " + err.message;
+                } else if (typeof err === 'string') {
+                  errorMsg += ": " + err;
+                } else if (err.type) {
+                  errorMsg += ` (${err.type})`;
+                }
+                
+                // Check for specific error types
+                if (err.message?.includes('authorization') || err.message?.includes('credentials') || err.message?.includes('Invalid')) {
+                  errorMsg += ". Please check your Braintree credentials in .env.local";
+                } else if (err.message?.includes('All payment options failed') || err.type === 'DropinError') {
+                  errorMsg += ". This usually means the payment form couldn't load. Try refreshing the page.";
+                }
+                
+                setError(errorMsg);
+                setLoading(false);
+                initializedRef.current = false;
+                return;
+              }
+              
+              if (!instance) {
+                console.error("Braintree returned no instance");
+                setError("Payment form failed to initialize. Please refresh and try again.");
+                setLoading(false);
+                initializedRef.current = false;
+                return;
+              }
+              
+              console.log("Braintree Drop-in initialized successfully");
+              setDropinInstance(instance);
+              setLoading(false);
+              initializedRef.current = true;
+            }
+          );
+        } catch (createErr: any) {
+          console.error("Error calling braintree.dropin.create:", createErr);
+          setError("Failed to create payment form: " + (createErr.message || "Unknown error"));
+          setLoading(false);
+          initializedRef.current = false;
+        }
+      } catch (err: any) {
+        if (!mounted) return;
+        console.error("Failed to initialize Braintree:", err);
+        setError("Failed to load payment form: " + (err.message || "Unknown error"));
+        setLoading(false);
+      }
+    };
+
+    // Try to initialize
+    initializeBraintree();
+
+    // Listen for script ready event
+    const handleBraintreeReady = () => {
+      if (mounted) {
+        initializeBraintree();
+      }
+    };
+    window.addEventListener('braintree-ready', handleBraintreeReady);
+
+    // Polling fallback
+    const interval = setInterval(() => {
+      if (mounted && !initializedRef.current && containerRef.current && window.braintree) {
+        initializeBraintree();
+      }
+    }, 1000);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('braintree-ready', handleBraintreeReady);
+      clearInterval(interval);
+      if (dropinInstance) {
+        try {
+          dropinInstance.teardown();
+          initializedRef.current = false;
+        } catch (e) {
+          // Ignore teardown errors
+        }
+      }
+    };
+  }, [items.length, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setProcessing(true);
+
+    try {
+      // For free orders, skip payment processing
+      if (isFreeOrder) {
+        const res = await fetch("/api/braintree/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            paymentMethodNonce: null, // No payment for free orders
+            amount: "0.00",
+            items: items.map((item) => ({
+              productId: item.productId,
+              title: item.title,
+              price: item.price,
+              quantity: item.quantity,
+            })),
+            shippingInfo,
+          }),
+        });
+
+        const data = await res.json();
+        console.log("Free order checkout response:", data);
+
+        if (data.success && data.orderId) {
+          console.log("Free order successful, redirecting to order confirmation:", data.orderId);
+          clearCart();
+          window.location.href = `/order-confirmation/${data.orderId}`;
+        } else {
+          console.error("Free order failed:", data);
+          setError(data.error || data.details || "Order failed. Please try again.");
+          setProcessing(false);
+        }
+        return;
+      }
+
+      // For paid orders, require payment
+      if (!dropinInstance) {
+        setError("Payment form not ready");
+        setProcessing(false);
+        return;
+      }
+
+      // Request payment method nonce
+      const payload = await dropinInstance.requestPaymentMethod();
+
+      // Submit to checkout API
+      const res = await fetch("/api/braintree/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentMethodNonce: payload.nonce,
+          amount: getTotal().toFixed(2),
+          items: items.map((item) => ({
+            productId: item.productId,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+          })),
+          shippingInfo,
+        }),
+      });
+
+      const data = await res.json();
+      
+      console.log("Checkout response:", data);
+
+      if (data.success && data.orderId) {
+        console.log("Payment successful, redirecting to order confirmation:", data.orderId);
+        clearCart();
+        // Use window.location for more reliable redirect
+        window.location.href = `/order-confirmation/${data.orderId}`;
+      } else {
+        console.error("Payment failed:", data);
+        setError(data.error || data.details || "Payment failed. Please try again.");
+        setProcessing(false);
+      }
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      setError(err.message || "An error occurred. Please try again.");
+      setProcessing(false);
+    }
+  };
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen w-full bg-white">
+      <div className="mx-auto max-w-4xl px-6 py-16">
+        <h1 className="text-3xl font-semibold mb-8">Checkout</h1>
+
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Shipping Information */}
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Email *</label>
+                <input
+                  type="email"
+                  required
+                  value={shippingInfo.email}
+                  onChange={(e) =>
+                    setShippingInfo({ ...shippingInfo, email: e.target.value })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={shippingInfo.name}
+                  onChange={(e) =>
+                    setShippingInfo({ ...shippingInfo, name: e.target.value })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Address *</label>
+                <input
+                  type="text"
+                  required
+                  value={shippingInfo.address}
+                  onChange={(e) =>
+                    setShippingInfo({ ...shippingInfo, address: e.target.value })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">City *</label>
+                  <input
+                    type="text"
+                    required
+                    value={shippingInfo.city}
+                    onChange={(e) =>
+                      setShippingInfo({ ...shippingInfo, city: e.target.value })
+                    }
+                    className="w-full border rounded px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">State</label>
+                  <input
+                    type="text"
+                    value={shippingInfo.state}
+                    onChange={(e) =>
+                      setShippingInfo({ ...shippingInfo, state: e.target.value })
+                    }
+                    className="w-full border rounded px-3 py-2"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">ZIP Code *</label>
+                  <input
+                    type="text"
+                    required
+                    value={shippingInfo.zip}
+                    onChange={(e) =>
+                      setShippingInfo({ ...shippingInfo, zip: e.target.value })
+                    }
+                    className="w-full border rounded px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Country *</label>
+                  <input
+                    type="text"
+                    required
+                    value={shippingInfo.country}
+                    onChange={(e) =>
+                      setShippingInfo({ ...shippingInfo, country: e.target.value })
+                    }
+                    className="w-full border rounded px-3 py-2"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment & Order Summary */}
+          <div>
+            {isFreeOrder ? (
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-800 font-semibold mb-2">Free Order</p>
+                  <p className="text-sm text-green-700">No payment required for this order.</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-xl font-semibold mb-4">Payment</h2>
+                <div 
+                  ref={containerRef}
+                  id="braintree-dropin-container" 
+                  className="mb-6 min-h-[200px]"
+                  suppressHydrationWarning
+                />
+
+                {loading && (
+                  <p className="text-sm text-zinc-600 mb-4">Loading payment form...</p>
+                )}
+
+                {error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+                    {error}
+                  </div>
+                )}
+              </>
+            )}
+
+            <div className="border-t pt-4 mb-6">
+              <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+              <div className="space-y-2 mb-4">
+                {items.map((item) => (
+                  <div key={item.productId} className="flex justify-between text-sm">
+                    <span>
+                      {item.title} × {item.quantity}
+                    </span>
+                    <span>${(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+                <span>Total:</span>
+                <span>${getTotal().toFixed(2)}</span>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={(!isFreeOrder && (loading || !dropinInstance)) || processing}
+              className="w-full rounded bg-black px-6 py-3 text-white hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {processing ? "Processing..." : isFreeOrder ? "Confirm Free Order" : "Complete Order"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
