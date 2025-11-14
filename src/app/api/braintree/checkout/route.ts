@@ -4,15 +4,17 @@ import * as braintree from "braintree";
 import { prisma } from "@/lib/prisma";
 import { getUserBySessionToken } from "@/lib/authDb";
 
-const gateway = new braintree.BraintreeGateway({
-  environment:
-    process.env.BRAINTREE_ENVIRONMENT === "production"
-      ? braintree.Environment.Production
-      : braintree.Environment.Sandbox,
-  merchantId: process.env.BRAINTREE_MERCHANT_ID || "",
-  publicKey: process.env.BRAINTREE_PUBLIC_KEY || "",
-  privateKey: process.env.BRAINTREE_PRIVATE_KEY || "",
-});
+function getGateway() {
+  return new braintree.BraintreeGateway({
+    environment:
+      process.env.BRAINTREE_ENVIRONMENT === "production"
+        ? braintree.Environment.Production
+        : braintree.Environment.Sandbox,
+    merchantId: process.env.BRAINTREE_MERCHANT_ID || "",
+    publicKey: process.env.BRAINTREE_PUBLIC_KEY || "",
+    privateKey: process.env.BRAINTREE_PRIVATE_KEY || "",
+  });
+}
 
 export async function POST(request: Request) {
   try {
@@ -40,6 +42,7 @@ export async function POST(request: Request) {
       }
 
       // Process payment with Braintree
+      const gateway = getGateway();
       const result = await gateway.transaction.sale({
         amount: amount.toString(),
         paymentMethodNonce,
