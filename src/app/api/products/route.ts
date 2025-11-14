@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   }
   
   // Handle image data - convert base64 data URL to buffer if provided
-  let imageData: Buffer | undefined = undefined;
+  let imageData: Uint8Array | undefined = undefined;
   let imageMimeType: string | undefined = undefined;
   
   if (body.imageData) {
@@ -44,11 +44,13 @@ export async function POST(request: Request) {
       if (matches) {
         imageMimeType = matches[1];
         const base64Data = matches[2];
-        imageData = Buffer.from(base64Data, 'base64');
+        const buffer = Buffer.from(base64Data, 'base64');
+        imageData = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength) as Uint8Array;
       }
     } else if (body.imageData && body.imageMimeType) {
       // If it's already a base64 string without data URL prefix
-      imageData = Buffer.from(body.imageData, 'base64');
+      const buffer = Buffer.from(body.imageData, 'base64');
+      imageData = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength) as Uint8Array;
       imageMimeType = body.imageMimeType;
     }
   }

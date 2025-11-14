@@ -8,7 +8,7 @@ export async function createProduct(input: Omit<Product, "id" | "createdAt" | "u
       description: input.description,
       price: input.price,
       imageUrl: input.imageUrl,
-      imageData: input.imageData ? Buffer.from(input.imageData) : null,
+      imageData: input.imageData ? (input.imageData as any) : null,
       imageMimeType: input.imageMimeType,
       category: input.category,
       brand: input.brand,
