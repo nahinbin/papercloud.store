@@ -20,7 +20,7 @@ export default function Home() {
           const user = data.user;
           setIsAuthed(true);
           setUsername(user?.username || null);
-          // Check if admin by isAdmin flag OR username is @admin or admin
+          // check username for @admin or admin
           setIsAdmin(user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false);
         } else {
           setIsAuthed(false);
