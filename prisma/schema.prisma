@@ -33,13 +33,30 @@ model Session {
 }
 
 model Product {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  price       Float
-  imageUrl    String?   @map("image_url")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id                  String    @id @default(cuid())
+  title               String
+  description         String?   @db.Text
+  price               Float
+  imageUrl            String?   @map("image_url")
+  category            String?
+  brand               String?
+  sku                 String?   @map("sku")
+  stockQuantity       Int?      @map("stock_quantity")
+  weight              Float?
+  dimensionsWidth     Float?    @map("dimensions_width")
+  dimensionsHeight    Float?    @map("dimensions_height")
+  dimensionsDepth     Float?    @map("dimensions_depth")
+  color               String?
+  material            String?
+  condition           String?
+  tags                String?   @db.Text
+  shippingCost        Float?    @map("shipping_cost")
+  estimatedShippingDays Int?    @map("estimated_shipping_days")
+  returnPolicy        String?   @db.Text @map("return_policy")
+  warranty            String?
+  specifications      String?   @db.Text
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
   @@map("products")
 }

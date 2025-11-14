@@ -37,6 +37,23 @@ export async function POST(request: Request) {
     price: body.price,
     description: body.description || undefined,
     imageUrl: body.imageUrl || undefined,
+    category: body.category || undefined,
+    brand: body.brand || undefined,
+    sku: body.sku || undefined,
+    stockQuantity: body.stockQuantity !== undefined ? Number(body.stockQuantity) : undefined,
+    weight: body.weight !== undefined ? Number(body.weight) : undefined,
+    dimensionsWidth: body.dimensionsWidth !== undefined ? Number(body.dimensionsWidth) : undefined,
+    dimensionsHeight: body.dimensionsHeight !== undefined ? Number(body.dimensionsHeight) : undefined,
+    dimensionsDepth: body.dimensionsDepth !== undefined ? Number(body.dimensionsDepth) : undefined,
+    color: body.color || undefined,
+    material: body.material || undefined,
+    condition: body.condition || undefined,
+    tags: body.tags || undefined,
+    shippingCost: body.shippingCost !== undefined ? Number(body.shippingCost) : undefined,
+    estimatedShippingDays: body.estimatedShippingDays !== undefined ? Number(body.estimatedShippingDays) : undefined,
+    returnPolicy: body.returnPolicy || undefined,
+    warranty: body.warranty || undefined,
+    specifications: body.specifications || undefined,
   });
   return NextResponse.json({ id: product.id, product }, { status: 201 });
 }

@@ -52,24 +52,57 @@ export default async function Home() {
             {products.map((product) => (
               <Link
                 key={product.id}
-                href={`/admin/products/${product.id}`}
-                className="group rounded border p-4 transition-shadow hover:shadow-lg"
+                href={`/products/${product.id}`}
+                className="group rounded-lg border p-4 transition-all hover:shadow-xl hover:border-black"
               >
                 {product.imageUrl && (
-                  <Image
-                    src={product.imageUrl}
-                    alt={product.title}
-                    width={400}
-                    height={300}
-                    className="mb-3 h-48 w-full rounded object-cover"
-                    unoptimized={product.imageUrl.startsWith("http")}
-                  />
+                  <div className="relative mb-3 h-48 w-full overflow-hidden rounded bg-gray-100">
+                    <Image
+                      src={product.imageUrl}
+                      alt={product.title}
+                      width={400}
+                      height={300}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      unoptimized={product.imageUrl.startsWith("http")}
+                    />
+                  </div>
                 )}
-                <h3 className="font-semibold group-hover:underline">{product.title}</h3>
-                <p className="mt-1 text-lg font-medium">${product.price.toFixed(2)}</p>
-                {product.description && (
-                  <p className="mt-2 text-sm text-zinc-600 line-clamp-2">{product.description}</p>
+                {!product.imageUrl && (
+                  <div className="mb-3 h-48 w-full rounded bg-gray-100 flex items-center justify-center">
+                    <span className="text-gray-400 text-sm">No Image</span>
+                  </div>
                 )}
+                <div className="space-y-2">
+                  {product.brand && (
+                    <p className="text-xs text-zinc-500 uppercase tracking-wide">{product.brand}</p>
+                  )}
+                  <h3 className="font-semibold text-lg group-hover:underline line-clamp-2">{product.title}</h3>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-xl font-bold">${product.price.toFixed(2)}</p>
+                    {product.shippingCost !== undefined && product.shippingCost === 0 && (
+                      <span className="text-xs text-green-600 font-medium">Free Shipping</span>
+                    )}
+                  </div>
+                  {product.stockQuantity !== undefined && (
+                    <p className={`text-xs ${product.stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
+                    </p>
+                  )}
+                  {product.description && (
+                    <p className="mt-2 text-sm text-zinc-600 line-clamp-2">{product.description}</p>
+                  )}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {product.category && (
+                      <span className="px-2 py-1 bg-zinc-100 rounded text-xs text-zinc-700">{product.category}</span>
+                    )}
+                    {product.condition && (
+                      <span className="px-2 py-1 bg-zinc-100 rounded text-xs text-zinc-700">{product.condition}</span>
+                    )}
+                  </div>
+                  {product.estimatedShippingDays && (
+                    <p className="text-xs text-zinc-500 mt-2">Ships in {product.estimatedShippingDays} days</p>
+                  )}
+                </div>
               </Link>
             ))}
           </div>

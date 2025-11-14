@@ -1,9 +1,26 @@
 export interface Product {
-id?: string;
-title: string;
-description?: string;
-price: number;
-imageUrl?: string;
-createdAt: number;
-updatedAt: number;
+  id?: string;
+  title: string;
+  description?: string;
+  price: number;
+  imageUrl?: string;
+  category?: string;
+  brand?: string;
+  sku?: string;
+  stockQuantity?: number;
+  weight?: number;
+  dimensionsWidth?: number;
+  dimensionsHeight?: number;
+  dimensionsDepth?: number;
+  color?: string;
+  material?: string;
+  condition?: string;
+  tags?: string;
+  shippingCost?: number;
+  estimatedShippingDays?: number;
+  returnPolicy?: string;
+  warranty?: string;
+  specifications?: string;
+  createdAt: number;
+  updatedAt: number;
 }
