@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "PaperCloud Store",
   description: "Browse and shop our collection of products",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/fav.png",
   },
 };
 

@@ -35,7 +35,7 @@ export default async function Home() {
           </p>
         )}
         {isAuthed === false && (
-          <p className="mt-2 text-zinc-600">Browse our products below. <Link href="/login" className="underline">Login</Link> or <Link href="/register" className="underline">register</Link> if you wish to create an account.</p>
+          <p className="mt-2 text-zinc-600">Browse our products below. <Link href="/login" className="underline">Login</Link> or <Link href="/register" className="underline">register</Link> create an account.</p>
         )}
 
         {products.length === 0 ? (
