@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -27,12 +28,55 @@ export default function RegisterPage() {
     // Validate and show error immediately
     if (filtered.length > 0 && !isValidUsername(filtered)) {
       setUsernameError("Username can only contain lowercase letters, numbers, and underscores");
-    } else if (filtered.length === 0) {
-      setUsernameError(null);
+      setUsernameStatus("idle");
     } else {
       setUsernameError(null);
+      if (filtered.length === 0) {
+        setUsernameStatus("idle");
+      }
     }
   };
+
+  useEffect(() => {
+    if (!username || usernameError) {
+      setUsernameStatus("idle");
+      return;
+    }
+
+    if (!isValidUsername(username)) {
+      setUsernameStatus("idle");
+      return;
+    }
+
+    let isCancelled = false;
+    setUsernameStatus("checking");
+
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/auth/check-username?username=${encodeURIComponent(username)}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          throw new Error("Failed to check username");
+        }
+        const data = await res.json();
+        if (!isCancelled) {
+          setUsernameStatus(data.available ? "available" : "taken");
+        }
+      } catch {
+        if (!isCancelled) {
+          setUsernameStatus("idle");
+        }
+      }
+    }, 300);
+
+    return () => {
+      isCancelled = true;
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, [username, usernameError]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +85,11 @@ export default function RegisterPage() {
     // Validate username before submitting
     if (!username || !isValidUsername(username)) {
       setUsernameError("Username can only contain lowercase letters, numbers, and underscores");
+      return;
+    }
+
+    if (usernameStatus === "taken") {
+      setUsernameError("Username taken");
       return;
     }
     
@@ -105,8 +154,8 @@ export default function RegisterPage() {
                 className={`w-full rounded-lg border px-4 py-2.5 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
                   usernameError 
                     ? "border-red-300 focus:ring-red-500" 
-                    : username.length > 0 && !usernameError
-                    ? "border-green-300 focus:ring-green-500"
+                : usernameStatus === "available"
+                ? "border-green-300 focus:ring-green-500"
                     : "border-zinc-300 focus:ring-black"
                 }`}
                 value={username} 
@@ -117,12 +166,18 @@ export default function RegisterPage() {
               {usernameError && (
                 <p className="mt-1.5 text-xs text-red-600">{usernameError}</p>
               )}
-              {!usernameError && username.length > 0 && (
-                <p className="mt-1.5 text-xs text-green-600 flex items-center gap-1">
-                  <span>✓</span> Valid username format
-                </p>
-              )}
-              {username.length === 0 && (
+          {!usernameError && usernameStatus === "taken" && (
+            <p className="mt-1.5 text-xs text-red-600">Username taken</p>
+          )}
+          {!usernameError && usernameStatus === "checking" && (
+            <p className="mt-1.5 text-xs text-zinc-500">Checking availability...</p>
+          )}
+          {!usernameError && usernameStatus === "available" && (
+            <p className="mt-1.5 text-xs text-green-600 flex items-center gap-1">
+              <span>✓</span> Username available
+            </p>
+          )}
+          {username.length === 0 && usernameStatus === "idle" && (
                 <p className="mt-1.5 text-xs text-zinc-500">Lowercase letters, numbers, and _ only</p>
               )}
             </div>

@@ -46,32 +46,44 @@ export default function Receipt({ order }: ReceiptProps) {
 
     setDownloading(true);
     try {
-      // Dynamic import for smaller bundle
-      const html2pdf = (await import("html2pdf.js")).default;
-      
-      const element = receiptRef.current;
-      const opt = {
-        margin: [0.5, 0.5] as [number, number],
-        filename: `receipt-${order.id}.pdf`,
-        image: { type: "jpeg" as const, quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true,
-          logging: false,
-          letterRendering: true
-        },
-        jsPDF: { 
-          unit: "in" as const, 
-          format: "letter" as const, 
-          orientation: "portrait" as const
-        },
-      };
+      const [{ jsPDF }, html2canvasModule] = await Promise.all([
+        import("jspdf"),
+        import("html2canvas"),
+      ]);
 
-      await html2pdf().set(opt).from(element).save();
+      const html2canvas = html2canvasModule.default || html2canvasModule;
+      const canvas = await html2canvas(receiptRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        unit: "pt",
+        format: "a4",
+        orientation: "portrait",
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 36; // half-inch margins
+      const availableWidth = pageWidth - margin * 2;
+      const availableHeight = pageHeight - margin * 2;
+      const ratio = Math.min(
+        availableWidth / canvas.width,
+        availableHeight / canvas.height
+      );
+
+      const imgWidth = canvas.width * ratio;
+      const imgHeight = canvas.height * ratio;
+      const offsetX = (pageWidth - imgWidth) / 2;
+
+      pdf.addImage(imgData, "PNG", offsetX, margin, imgWidth, imgHeight);
+      pdf.save(`receipt-${order.id}.pdf`);
     } catch (error) {
       console.error("PDF generation error:", error);
-      // Fallback to print
-      alert("PDF download failed. Using print instead.");
+      alert("PDF download failed. Please try again or use print instead.");
       window.print();
     } finally {
       setDownloading(false);

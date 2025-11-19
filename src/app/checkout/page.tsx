@@ -18,6 +18,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [redirectingOrderId, setRedirectingOrderId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scriptLoadedRef = useRef(false);
   const initializedRef = useRef(false);
@@ -76,7 +77,9 @@ export default function CheckoutPage() {
   // Initialize Braintree Drop-in when container and script are ready
   useEffect(() => {
     if (items.length === 0) {
-      router.push("/cart");
+      if (!redirectingOrderId) {
+        router.push("/cart");
+      }
       return;
     }
 
@@ -375,8 +378,10 @@ export default function CheckoutPage() {
 
         if (data.success && data.orderId) {
           console.log("Free order successful, redirecting to order confirmation:", data.orderId);
+          setRedirectingOrderId(data.orderId);
           clearCart();
-          window.location.href = `/order-confirmation/${data.orderId}`;
+          router.push(`/order-confirmation/${data.orderId}`);
+          router.refresh();
         } else {
           console.error("Free order failed:", data);
           setError(data.error || data.details || "Order failed. Please try again.");
@@ -418,9 +423,10 @@ export default function CheckoutPage() {
 
       if (data.success && data.orderId) {
         console.log("Payment successful, redirecting to order confirmation:", data.orderId);
+        setRedirectingOrderId(data.orderId);
         clearCart();
-        // Use window.location for more reliable redirect
-        window.location.href = `/order-confirmation/${data.orderId}`;
+        router.push(`/order-confirmation/${data.orderId}`);
+        router.refresh();
       } else {
         console.error("Payment failed:", data);
         setError(data.error || data.details || "Payment failed. Please try again.");
@@ -432,6 +438,23 @@ export default function CheckoutPage() {
       setProcessing(false);
     }
   };
+
+  if (redirectingOrderId) {
+    return (
+      <div className="min-h-screen w-full bg-white flex items-center justify-center px-6">
+        <div className="max-w-md text-center space-y-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 text-3xl">
+            ✓
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold mb-2">Redirecting to your order summary…</h1>
+            <p className="text-zinc-600">Order ID: <span className="font-mono">{redirectingOrderId.slice(0, 12)}...</span></p>
+            <p className="text-sm text-zinc-500 mt-4">If you are not redirected automatically, <button className="underline text-black" onClick={() => router.push(`/order-confirmation/${redirectingOrderId}`)}>click here</button>.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return null;
