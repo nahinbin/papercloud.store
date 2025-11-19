@@ -22,7 +22,7 @@ export default async function Home() {
   ]);
 
   const isAuthed = !!user;
-  const isAdmin = user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false;
+  const isAdmin = user?.isAdmin || user?.username === "admin" || false;
   const username = user?.username || null;
 
   return (

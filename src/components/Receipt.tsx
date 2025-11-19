@@ -42,44 +42,100 @@ export default function Receipt({ order }: ReceiptProps) {
   };
 
   const downloadPDF = async () => {
-    if (!receiptRef.current) return;
-
     setDownloading(true);
     try {
-      const [{ jsPDF }, html2canvasModule] = await Promise.all([
-        import("jspdf"),
-        import("html2canvas"),
-      ]);
-
-      const html2canvas = html2canvasModule.default || html2canvasModule;
-      const canvas = await html2canvas(receiptRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-
-      const imgData = canvas.toDataURL("image/png");
+      const { jsPDF } = await import("jspdf");
       const pdf = new jsPDF({
         unit: "pt",
         format: "a4",
         orientation: "portrait",
       });
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 36; // half-inch margins
-      const availableWidth = pageWidth - margin * 2;
-      const availableHeight = pageHeight - margin * 2;
-      const ratio = Math.min(
-        availableWidth / canvas.width,
-        availableHeight / canvas.height
+      const marginX = 40;
+      let y = 60;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(22);
+      pdf.text("PAPERCLOUD RECEIPT", marginX, y);
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(12);
+      y += 24;
+      pdf.text(`Order ID: ${order.id}`, marginX, y);
+      y += 18;
+      pdf.text(`Order Date: ${formatDate(order.createdAt)}`, marginX, y);
+      y += 18;
+      pdf.text(`Status: ${order.status.toUpperCase()}`, marginX, y);
+      y += 18;
+      pdf.text(`Customer: ${order.shippingName}`, marginX, y);
+      y += 18;
+      pdf.text(`Email: ${order.email}`, marginX, y);
+
+      y += 24;
+      pdf.text("Shipping Address:", marginX, y);
+      pdf.setFont("helvetica", "normal");
+      y += 16;
+      const addressLines = [
+        order.shippingAddress,
+        `${order.shippingCity}${order.shippingState ? `, ${order.shippingState}` : ""} ${order.shippingZip}`,
+        order.shippingCountry,
+      ];
+      addressLines.forEach((line) => {
+        pdf.text(line, marginX, y);
+        y += 14;
+      });
+
+      y += 10;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(14);
+      pdf.text("Items", marginX, y);
+      y += 16;
+
+      pdf.setFontSize(12);
+      pdf.setDrawColor(200);
+      pdf.line(marginX, y, pdf.internal.pageSize.getWidth() - marginX, y);
+      y += 12;
+
+      const addItemRow = (title: string, qty: number, price: number) => {
+        const maxWidth = pdf.internal.pageSize.getWidth() - marginX * 2;
+        const text = pdf.splitTextToSize(title, maxWidth - 200);
+        pdf.text(text, marginX, y);
+        pdf.text(`Qty: ${qty}`, pdf.internal.pageSize.getWidth() - marginX - 150, y);
+        pdf.text(`$${price.toFixed(2)}`, pdf.internal.pageSize.getWidth() - marginX, y, { align: "right" });
+        y += text.length * 14;
+        y += 8;
+      };
+
+      order.items.forEach((item) => {
+        addItemRow(item.productTitle, item.quantity, item.productPrice * item.quantity);
+        if (y > pdf.internal.pageSize.getHeight() - 120) {
+          pdf.addPage();
+          y = 60;
+        }
+      });
+
+      pdf.setDrawColor(0);
+      pdf.line(marginX, y, pdf.internal.pageSize.getWidth() - marginX, y);
+      y += 20;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(16);
+      pdf.text(
+        `Total: $${order.totalAmount.toFixed(2)}`,
+        pdf.internal.pageSize.getWidth() - marginX,
+        y,
+        { align: "right" }
       );
 
-      const imgWidth = canvas.width * ratio;
-      const imgHeight = canvas.height * ratio;
-      const offsetX = (pageWidth - imgWidth) / 2;
+      y += 30;
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      pdf.text(
+        "Thank you for shopping with PaperCloud! This document serves as your official receipt.",
+        marginX,
+        y
+      );
 
-      pdf.addImage(imgData, "PNG", offsetX, margin, imgWidth, imgHeight);
       pdf.save(`receipt-${order.id}.pdf`);
     } catch (error) {
       console.error("PDF generation error:", error);
