@@ -18,19 +18,13 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Get counts
-  const [usersCount, productsCount, ordersCount] = await Promise.all([
-    prisma.user.count(),
-    prisma.product.count(),
-    prisma.order.count(),
-  ]);
-
-  return NextResponse.json({
-    stats: {
-      users: usersCount,
-      products: productsCount,
-      orders: ordersCount,
+  const orders = await prisma.order.findMany({
+    include: {
+      items: true,
     },
+    orderBy: { createdAt: "desc" },
   });
+
+  return NextResponse.json({ orders });
 }
 

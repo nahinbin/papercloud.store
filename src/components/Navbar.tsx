@@ -9,25 +9,8 @@ export default function Navbar() {
 	const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 	const [isAdmin, setIsAdmin] = useState<boolean>(false);
 	const [username, setUsername] = useState<string | null>(null);
-	const [logoUrl, setLogoUrl] = useState<string>("/nav.png");
 	const { getItemCount } = useCart();
 	const cartItemCount = getItemCount();
-	
-	useEffect(() => {
-		// Fetch current logo
-		fetch("/api/logo")
-			.then(async (res) => {
-				if (res.ok) {
-					const data = await res.json();
-					if (data.exists && data.url) {
-						setLogoUrl(data.url);
-					}
-				}
-			})
-			.catch(() => {
-				// Use default logo on error
-			});
-	}, []);
 
 	useEffect(() => {
  		let cancelled = false;
@@ -57,7 +40,15 @@ export default function Navbar() {
 		<header className="w-full border-b bg-white">
 			<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
 				<Link href="/" className="flex items-center">
-					<Image src={logoUrl} alt="PaperCloud" width={120} height={32} className="h-8 w-auto" />
+					<Image 
+						src="/nav.png" 
+						alt="PaperCloud" 
+						width={120} 
+						height={32} 
+						className="h-8 w-auto" 
+						priority
+						unoptimized
+					/>
 				</Link>
 				<nav className="flex items-center gap-3 text-sm">
 					<Link
