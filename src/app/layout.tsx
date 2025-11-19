@@ -17,9 +17,20 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "PaperCloud Store",
   description: "Browse and shop our collection of products",
-  icons: {
-    icon: "/fav.png",
-  },
+  icons: [
+    {
+      rel: "icon",
+      url: "/fav.png",
+    },
+    {
+      rel: "shortcut icon",
+      url: "/fav.png",
+    },
+    {
+      rel: "apple-touch-icon",
+      url: "/fav.png",
+    },
+  ],
 };
 
 export default function RootLayout({

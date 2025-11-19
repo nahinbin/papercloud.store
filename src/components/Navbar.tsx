@@ -55,12 +55,12 @@ export default function Navbar() {
 					<div className="flex flex-1 justify-start">
 						<Link
 							href="/cart"
-							className="relative inline-flex items-center gap-2 rounded-full px-3 py-2 hover:bg-zinc-50 transition-colors"
+							className="relative inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-zinc-50 transition-colors"
 							aria-label="Open cart"
 							title="Cart"
 						>
 							<svg
-								className="w-6 h-6"
+								className="w-5 h-5"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -73,7 +73,7 @@ export default function Navbar() {
 								/>
 							</svg>
 							{cartItemCount > 0 && (
-								<span className="absolute -right-1 -top-1 bg-black text-white text-xs rounded-full min-w-[1.5rem] px-1.5 py-0.5 text-center leading-none">
+								<span className="absolute -right-1 -top-1 bg-black text-white text-[10px] rounded-full min-w-[1.25rem] px-1 py-0.5 text-center leading-none">
 									{cartItemCount}
 								</span>
 							)}
@@ -87,7 +87,7 @@ export default function Navbar() {
 								alt="PaperCloud" 
 								width={120} 
 								height={32} 
-								className="h-8 w-auto" 
+								className="h-8 w-auto shrink-0 object-contain"
 								priority
 								unoptimized
 							/>

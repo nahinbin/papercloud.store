@@ -28,14 +28,13 @@ export default async function Home() {
   return (
     <div className="min-h-screen w-full bg-white text-black">
       <div className="mx-auto max-w-4xl px-6 py-16">
-        <h1 className="text-2xl font-semibold">PaperCloud Store</h1>
         {isAuthed === true && (
           <p className="mt-2 text-zinc-600">
             Welcome back{username ? `, @${username}` : ""}! Browse our products below.
           </p>
         )}
         {isAuthed === false && (
-          <p className="mt-2 text-zinc-600">Browse our products below. <Link href="/login" className="underline">Login</Link> or <Link href="/register" className="underline">register</Link> create an account.</p>
+          <p className="mt-2 text-zinc-600">Browse our products below. <Link href="/login" className="underline">Login</Link> to keep track of your orders.</p>
         )}
 
         {products.length === 0 ? (
