@@ -294,8 +294,8 @@ export default function BannersPage() {
                   <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
                     <p className="font-medium text-blue-900 mb-1">📱 Mobile Banner:</p>
                     <ul className="text-blue-800 space-y-1 text-xs">
-                      <li>• <strong>Optimal Size:</strong> 750 × 400px</li>
-                      <li>• <strong>Aspect Ratio:</strong> 15:8 (1.875:1)</li>
+                      <li>• <strong>Optimal Size:</strong> 750 × 392px</li>
+                      <li>• <strong>Aspect Ratio:</strong> 750:392 (1.91:1)</li>
                       <li>• <strong>Display:</strong> Full width on mobile devices</li>
                     </ul>
                   </div>
@@ -339,8 +339,8 @@ export default function BannersPage() {
                   <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded text-sm">
                     <p className="font-medium text-green-900 mb-1">🖥️ Desktop Banner:</p>
                     <ul className="text-green-800 space-y-1 text-xs">
-                      <li>• <strong>Optimal Size:</strong> 1920 × 500px</li>
-                      <li>• <strong>Aspect Ratio:</strong> 3.84:1 (wider format)</li>
+                      <li>• <strong>Optimal Size:</strong> 1904 × 382px</li>
+                      <li>• <strong>Aspect Ratio:</strong> 1904:382 (4.98:1)</li>
                       <li>• <strong>Display:</strong> Full width on desktop devices</li>
                     </ul>
                   </div>

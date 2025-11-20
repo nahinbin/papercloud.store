@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Banner responsive aspect ratios */
+.banner-item {
+  aspect-ratio: 750 / 392; /* Mobile: 750x392 */
+}
+
+@media (min-width: 768px) {
+  .banner-item {
+    aspect-ratio: 1904 / 382; /* Desktop: 1904x382 */
+  }
+}
+
 /* Print styles for receipt */
 @media print {
   body * {

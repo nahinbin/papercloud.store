@@ -8,6 +8,8 @@ interface Banner {
   id: string;
   title?: string;
   imageUrl?: string;
+  mobileImageUrl?: string;
+  desktopImageUrl?: string;
   linkUrl?: string;
   order: number;
   isActive: boolean;
@@ -83,8 +85,29 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
       <div className="flex">
         {banners.map((banner) => {
           const BannerContent = (
-            <div className="flex-shrink-0 w-screen relative overflow-hidden bg-gray-200 snap-start snap-always" style={{ aspectRatio: '21/9' }}>
-              {banner.imageUrl ? (
+            <div className="flex-shrink-0 w-screen relative overflow-hidden bg-gray-200 snap-start snap-always banner-item">
+              {/* Mobile Image */}
+              {banner.mobileImageUrl && (
+                <Image
+                  src={banner.mobileImageUrl}
+                  alt="Banner"
+                  fill
+                  className="object-cover md:hidden"
+                  unoptimized={banner.mobileImageUrl.startsWith("http")}
+                />
+              )}
+              {/* Desktop Image */}
+              {banner.desktopImageUrl && (
+                <Image
+                  src={banner.desktopImageUrl}
+                  alt="Banner"
+                  fill
+                  className="object-cover hidden md:block"
+                  unoptimized={banner.desktopImageUrl.startsWith("http")}
+                />
+              )}
+              {/* Fallback to old imageUrl if mobile/desktop not set */}
+              {!banner.mobileImageUrl && !banner.desktopImageUrl && banner.imageUrl && (
                 <Image
                   src={banner.imageUrl}
                   alt="Banner"
@@ -92,7 +115,9 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
                   className="object-cover"
                   unoptimized={banner.imageUrl.startsWith("http")}
                 />
-              ) : (
+              )}
+              {/* No image fallback */}
+              {!banner.mobileImageUrl && !banner.desktopImageUrl && !banner.imageUrl && (
                 <div className="w-full h-full flex items-center justify-center">
                   <span className="text-gray-400">No Image</span>
                 </div>
