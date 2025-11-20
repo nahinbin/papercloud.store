@@ -43,7 +43,7 @@ export async function PATCH(
       if (imageData === null) return { data: null, mimeType: null };
       if (!imageData) return { data: undefined, mimeType: undefined };
       
-      let data: Uint8Array | null | undefined = undefined;
+      let data: Buffer | null | undefined = undefined;
       let mime: string | null | undefined = undefined;
       
       if (typeof imageData === 'string' && imageData.startsWith('data:')) {
@@ -51,12 +51,10 @@ export async function PATCH(
         if (matches) {
           mime = matches[1];
           const base64Data = matches[2];
-          const buffer = Buffer.from(base64Data, 'base64');
-          data = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength) as Uint8Array;
+          data = Buffer.from(base64Data, 'base64');
         }
       } else if (imageData && imageMimeType) {
-        const buffer = Buffer.from(imageData, 'base64');
-        data = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength) as Uint8Array;
+        data = Buffer.from(imageData, 'base64');
         mime = imageMimeType;
       }
       
