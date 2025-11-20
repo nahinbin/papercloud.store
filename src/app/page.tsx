@@ -2,8 +2,10 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import Image from "next/image";
 import { listProducts } from "@/lib/productDb";
+import { listBanners } from "@/lib/bannerDb";
 import { getUserBySessionToken } from "@/lib/authDb";
 import type { Product } from "@/types/product";
+import BannerCarousel from "@/components/BannerCarousel";
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
@@ -16,6 +18,15 @@ async function getCurrentUser() {
 
 export default async function Home() {
   // Fetch data in parallel on the server
+  // Wrap banner fetching in try-catch to handle cases where Banner model doesn't exist yet
+  let banners: Awaited<ReturnType<typeof listBanners>> = [];
+  try {
+    banners = await listBanners(true); // Only get active banners
+  } catch (error) {
+    // Silently fail if banners can't be loaded (model not generated yet)
+    console.warn("Could not load banners:", error);
+  }
+
   const [user, products] = await Promise.all([
     getCurrentUser(),
     listProducts(),
@@ -27,16 +38,10 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen w-full bg-white text-black">
-      <div className="mx-auto max-w-4xl px-6 py-16">
-        {isAuthed === true && (
-          <p className="mt-2 text-zinc-600">
-            Welcome back{username ? `, @${username}` : ""}! Browse our products below.
-          </p>
-        )}
-        {isAuthed === false && (
-          <p className="mt-2 text-zinc-600">Browse our products below. <Link href="/login" className="underline">Login</Link> to keep track of your orders.</p>
-        )}
+      {/* Banner Section */}
+      <BannerCarousel banners={banners} />
 
+      <div className="mx-auto max-w-4xl px-6 py-16">
         {products.length === 0 ? (
           <div className="mt-8">
             <p className="text-zinc-600">No products available yet.</p>

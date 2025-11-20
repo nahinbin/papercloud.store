@@ -52,6 +52,53 @@ export async function PATCH(
   }
 }
 
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("session")?.value;
+  const user = await getUserBySessionToken(token);
+  
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  
+  // Check if admin
+  const isAdmin = user.isAdmin || user.username === "@admin" || user.username === "admin";
+  if (!isAdmin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+
+  try {
+    // Check if order exists
+    const order = await prisma.order.findUnique({
+      where: { id },
+    });
+
+    if (!order) {
+      return NextResponse.json(
+        { error: "Order not found" },
+        { status: 404 }
+      );
+    }
+
+    // Delete order (OrderItems will be cascade deleted)
+    await prisma.order.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true, message: "Order deleted successfully" });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to delete order" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

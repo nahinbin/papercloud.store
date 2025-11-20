@@ -30,6 +30,12 @@ interface Order {
   updatedAt: string;
 }
 
+interface Toast {
+  id: string;
+  message: string;
+  type: "success" | "error";
+}
+
 export default function OrdersPage() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -38,6 +44,9 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ orderId: string; orderName: string } | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -80,9 +89,16 @@ export default function OrdersPage() {
     }
   };
 
-  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
-    if (!confirm(`Are you sure you want to update order status to "${newStatus}"?`)) return;
+  const showToast = (message: string, type: "success" | "error") => {
+    const id = Date.now().toString();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3000);
+  };
 
+  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+    setUpdatingStatus(orderId);
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PATCH",
@@ -95,13 +111,37 @@ export default function OrdersPage() {
         if (selectedOrder?.id === orderId) {
           setSelectedOrder(data.order);
         }
-        alert("Order status updated successfully");
+        showToast("Order status updated successfully", "success");
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || "Failed to update order status");
+        showToast(data.error || "Failed to update order status", "error");
       }
     } catch (err) {
-      alert("Failed to update order status");
+      showToast("Failed to update order status", "error");
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    setDeleteConfirm(null);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        const orderToDelete = orders.find(o => o.id === orderId);
+        setOrders(orders.filter(o => o.id !== orderId));
+        if (selectedOrder?.id === orderId) {
+          setSelectedOrder(null);
+        }
+        showToast("Order deleted successfully", "success");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.error || "Failed to delete order", "error");
+      }
+    } catch (err) {
+      showToast("Failed to delete order", "error");
     }
   };
 
@@ -140,6 +180,53 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen w-full bg-white">
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 min-w-[300px] ${
+              toast.type === "success"
+                ? "bg-green-50 border border-green-200 text-green-800"
+                : "bg-red-50 border border-red-200 text-red-800"
+            }`}
+          >
+            <span className="font-medium">{toast.message}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 border border-zinc-200">
+            <h3 className="text-lg font-semibold mb-3">Delete Order?</h3>
+            <p className="text-sm text-zinc-600 mb-6">
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="px-4 py-2 text-sm border border-zinc-300 rounded text-zinc-700 hover:bg-zinc-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleDeleteOrder(deleteConfirm.orderId);
+                  if (selectedOrder?.id === deleteConfirm.orderId) {
+                    setSelectedOrder(null);
+                  }
+                }}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-7xl px-6 py-12">
         <div className="mb-8">
           <Link href="/admin" className="text-zinc-600 hover:text-black underline mb-4 inline-block">
@@ -263,7 +350,7 @@ export default function OrdersPage() {
                       {new Date(order.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-2 items-center">
+                      <div className="flex gap-2 items-center flex-wrap">
                         <button
                           onClick={() => setSelectedOrder(order)}
                           className="text-sm text-blue-600 hover:underline"
@@ -279,7 +366,10 @@ export default function OrdersPage() {
                         <select
                           value={order.status}
                           onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
-                          className="text-sm border rounded px-2 py-1 ml-2"
+                          disabled={updatingStatus === order.id}
+                          className={`text-sm border rounded px-2 py-1 ${
+                            updatingStatus === order.id ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
                         >
                           <option value="pending">Pending</option>
                           <option value="paid">Paid</option>
@@ -287,6 +377,13 @@ export default function OrdersPage() {
                           <option value="delivered">Delivered</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
+                        <button
+                          onClick={() => setDeleteConfirm({ orderId: order.id, orderName: order.shippingName })}
+                          className="text-sm text-red-600 hover:text-red-800 hover:underline"
+                          title="Delete order"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -429,6 +526,20 @@ export default function OrdersPage() {
                       <option value="cancelled">Cancelled</option>
                     </select>
                   </div>
+                </div>
+
+                {/* Delete Order */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-red-600">Danger Zone</h3>
+                  <button
+                    onClick={() => {
+                      setDeleteConfirm({ orderId: selectedOrder.id, orderName: selectedOrder.shippingName });
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                  >
+                    Delete Order
+                  </button>
+                  <p className="text-sm text-zinc-600 mt-2">This action cannot be undone. All order items will be permanently deleted.</p>
                 </div>
               </div>
             </div>

@@ -121,15 +121,18 @@ export default function AdminDashboard() {
           </div>
 
           <div className="p-6 border-2 border-zinc-200 rounded-lg bg-white">
-            <h2 className="text-xl font-semibold mb-4">Add Product</h2>
-            <p className="text-sm text-zinc-600 mb-4">Create a new product for your store</p>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Banners</h2>
+            </div>
+            <p className="text-sm text-zinc-600 mb-4">Manage homepage banners</p>
             <Link
-              href="/admin/products/new"
+              href="/admin/banners"
               className="inline-block rounded bg-black px-4 py-2 text-white text-sm hover:bg-zinc-800 transition-colors"
             >
-              Create Product →
+              Manage Banners →
             </Link>
           </div>
+
         </div>
 
         <div className="mt-8">

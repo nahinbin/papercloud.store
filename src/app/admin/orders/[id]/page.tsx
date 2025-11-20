@@ -30,6 +30,12 @@ interface Order {
   updatedAt: string;
 }
 
+interface Toast {
+  id: string;
+  message: string;
+  type: "success" | "error";
+}
+
 export default function OrderDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -40,6 +46,7 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -82,9 +89,16 @@ export default function OrderDetailPage() {
     }
   };
 
+  const showToast = (message: string, type: "success" | "error") => {
+    const id = Date.now().toString();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3000);
+  };
+
   const handleStatusUpdate = async (newStatus: string) => {
     if (!order) return;
-    if (!confirm(`Are you sure you want to update order status to "${newStatus}"?`)) return;
 
     setUpdating(true);
     try {
@@ -96,13 +110,13 @@ export default function OrderDetailPage() {
       if (res.ok) {
         const data = await res.json();
         setOrder(data.order);
-        alert("Order status updated successfully");
+        showToast("Order status updated successfully", "success");
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || "Failed to update order status");
+        showToast(data.error || "Failed to update order status", "error");
       }
     } catch (err) {
-      alert("Failed to update order status");
+      showToast("Failed to update order status", "error");
     } finally {
       setUpdating(false);
     }
@@ -154,6 +168,22 @@ export default function OrderDetailPage() {
 
   return (
     <div className="min-h-screen w-full bg-white">
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 min-w-[300px] ${
+              toast.type === "success"
+                ? "bg-green-50 border border-green-200 text-green-800"
+                : "bg-red-50 border border-red-200 text-red-800"
+            }`}
+          >
+            <span className="font-medium">{toast.message}</span>
+          </div>
+        ))}
+      </div>
+
       <div className="mx-auto max-w-4xl px-6 py-12">
         <div className="mb-8">
           <Link href="/admin/orders" className="text-zinc-600 hover:text-black underline mb-4 inline-block">
