@@ -1,11 +1,18 @@
+import { LoadingPageShell, ProductGridSkeleton, Skeleton } from "@/components/LoadingSkeletons";
+
 export default function Loading() {
   return (
-    <div className="min-h-screen w-full bg-white text-black">
-      <div className="mx-auto max-w-4xl px-6 py-16">
-        <h1 className="text-2xl font-semibold">PaperCloud Store</h1>
-        <p className="mt-8 text-zinc-600">Loading products...</p>
+    <LoadingPageShell title="PaperCloud" subtitle="Curating products for you">
+      <div className="space-y-8">
+        <div className="rounded-3xl border border-zinc-100 bg-white/80 p-6 shadow-sm">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+            <Skeleton className="h-24 w-full rounded-2xl md:col-span-2" />
+            <Skeleton className="h-24 w-full rounded-2xl md:col-span-1" />
+            <Skeleton className="h-24 w-full rounded-2xl md:col-span-1" />
+          </div>
+        </div>
+        <ProductGridSkeleton count={6} />
       </div>
-    </div>
+    </LoadingPageShell>
   );
 }
-

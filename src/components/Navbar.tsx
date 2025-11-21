@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/LoadingSkeletons";
 import { useCart } from "@/contexts/CartContext";
 
 export default function Navbar() {
@@ -50,7 +51,7 @@ export default function Navbar() {
 
 	return (
 		<>
-			<header className="w-full border-b bg-white sticky top-0 z-50">
+			<header className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
 				<div className="mx-auto flex max-w-6xl items-center px-4 py-3 gap-4">
 					<div className="flex flex-1 justify-start">
 						<Link
@@ -237,8 +238,9 @@ export default function Navbar() {
 										</Link>
 									</>
 								) : (
-									<div className="px-4 py-2 text-sm text-zinc-500">
-										Loading...
+									<div className="space-y-3 px-4 py-2">
+										<Skeleton className="h-11 w-full rounded-xl" />
+										<Skeleton className="h-11 w-full rounded-xl" />
 									</div>
 								)}
 							</div>

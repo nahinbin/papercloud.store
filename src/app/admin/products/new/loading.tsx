@@ -2,8 +2,9 @@ import { FormSkeleton, LoadingPageShell } from "@/components/LoadingSkeletons";
 
 export default function Loading() {
   return (
-    <LoadingPageShell title="Admin" subtitle="Preparing product editor" widthClassName="max-w-3xl">
-      <FormSkeleton fields={6} />
+    <LoadingPageShell title="Admin · Products" subtitle="Opening new product form" widthClassName="max-w-3xl">
+      <FormSkeleton fields={8} />
     </LoadingPageShell>
   );
 }
+

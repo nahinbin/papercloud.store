@@ -11,16 +11,16 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen w-full bg-white">
+      <div className="min-h-screen w-full bg-gradient-to-b from-zinc-50 via-white to-white text-zinc-900">
         <div className="mx-auto max-w-4xl px-6 py-16">
-          <h1 className="text-3xl font-semibold mb-8">Shopping Cart</h1>
-          <div className="text-center py-12">
-            <p className="text-zinc-600 mb-4">Your cart is empty</p>
+          <div className="rounded-3xl border border-zinc-100 bg-white/80 p-10 text-center shadow-sm">
+            <h1 className="text-3xl font-semibold mb-4">Shopping cart</h1>
+            <p className="text-zinc-600 mb-6">Your cart is empty.</p>
             <Link
               href="/"
-              className="inline-block rounded bg-black px-6 py-3 text-white hover:bg-zinc-800"
+              className="inline-flex items-center rounded-full border border-zinc-900/10 bg-zinc-900 px-6 py-3 text-sm font-medium text-white hover:bg-black"
             >
-              Continue Shopping
+              Continue shopping
             </Link>
           </div>
         </div>
@@ -29,44 +29,57 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-white">
+    <div className="min-h-screen w-full bg-gradient-to-b from-zinc-50 via-white to-white text-zinc-900">
       <div className="mx-auto max-w-4xl px-6 py-16">
-        <h1 className="text-3xl font-semibold mb-8">Shopping Cart</h1>
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">Cart</p>
+            <h1 className="text-3xl font-semibold">Shopping cart</h1>
+          </div>
+          <span className="text-sm text-zinc-500">{items.length} items</span>
+        </div>
 
         <div className="space-y-4 mb-8">
           {items.map((item) => (
             <div
               key={item.productId}
-              className="flex gap-4 border rounded-lg p-4"
+              className="flex gap-4 rounded-3xl border border-zinc-100 bg-white/80 p-4 shadow-sm flex-col sm:flex-row"
             >
               {item.imageUrl && (
-                <div className="relative w-24 h-24 flex-shrink-0">
+                <div className="relative w-full h-48 rounded-2xl overflow-hidden sm:w-32 sm:h-32">
                   <Image
                     src={item.imageUrl}
                     alt={item.title}
                     fill
-                    className="object-cover rounded"
+                    className="object-cover"
                     unoptimized={item.imageUrl.startsWith("http")}
                   />
                 </div>
               )}
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">{item.title}</h3>
-                <p className="text-zinc-600 mb-2">${item.price.toFixed(2)}</p>
-                <div className="flex items-center gap-3">
-                  <label className="text-sm text-zinc-600">Quantity:</label>
-                  <div className="flex items-center gap-2">
+              {!item.imageUrl && (
+                <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 sm:h-32 sm:w-32">
+                  <span className="text-xs uppercase tracking-[0.3em] text-zinc-400">No media</span>
+                </div>
+              )}
+              <div className="flex-1 space-y-3">
+                <div>
+                  <h3 className="font-semibold text-lg">{item.title}</h3>
+                  <p className="text-zinc-600">${item.price.toFixed(2)}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="text-sm text-zinc-500">Quantity</label>
+                  <div className="flex items-center gap-2 rounded-full border border-zinc-200 px-2 py-1">
                     <button
                       onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                      className="w-8 h-8 rounded border flex items-center justify-center hover:bg-zinc-50"
+                      className="h-8 w-8 rounded-full border border-transparent text-lg hover:bg-zinc-50"
                     >
                       −
                     </button>
-                    <span className="w-8 text-center">{item.quantity}</span>
+                    <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
                     <button
                       onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                       disabled={item.stockQuantity !== undefined && item.quantity >= item.stockQuantity}
-                      className="w-8 h-8 rounded border flex items-center justify-center hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="h-8 w-8 rounded-full border border-transparent text-lg hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       +
                     </button>
@@ -74,12 +87,12 @@ export default function CartPage() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-semibold mb-2">
+                <p className="font-semibold mb-2 text-lg">
                   ${(item.price * item.quantity).toFixed(2)}
                 </p>
                 <button
                   onClick={() => removeItem(item.productId)}
-                  className="text-sm text-red-600 hover:text-red-700"
+                  className="text-sm text-red-500 hover:text-red-600"
                 >
                   Remove
                 </button>
@@ -88,29 +101,29 @@ export default function CartPage() {
           ))}
         </div>
 
-        <div className="border-t pt-6">
-          <div className="flex justify-between items-center mb-6">
-            <span className="text-xl font-semibold">Total:</span>
-            <span className="text-2xl font-bold">${getTotal().toFixed(2)}</span>
+        <div className="rounded-3xl border border-zinc-100 bg-white/80 p-6 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+            <span className="text-xl font-semibold">Total</span>
+            <span className="text-3xl font-bold tracking-tight">${getTotal().toFixed(2)}</span>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Link
               href="/"
-              className="flex-1 rounded border px-6 py-3 text-center hover:bg-zinc-50"
+              className="flex-1 rounded-full border border-zinc-200 px-6 py-3 text-center text-sm font-medium text-zinc-700 hover:bg-zinc-50"
             >
-              Continue Shopping
+              Continue shopping
             </Link>
             <button
               onClick={clearCart}
-              className="rounded border px-6 py-3 hover:bg-zinc-50"
+              className="rounded-full border border-zinc-200 px-6 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
             >
-              Clear Cart
+              Clear cart
             </button>
             <button
               onClick={() => router.push("/checkout")}
-              className="flex-1 rounded bg-black px-6 py-3 text-white hover:bg-zinc-800"
+              className="flex-1 rounded-full border border-zinc-900/10 bg-zinc-900 px-6 py-3 text-sm font-medium text-white hover:bg-black"
             >
-              Proceed to Checkout
+              Proceed to checkout
             </button>
           </div>
         </div>
