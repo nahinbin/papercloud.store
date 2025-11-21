@@ -9,7 +9,7 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
-  return new Response(catalogue.imageData, {
+  return new NextResponse(catalogue.imageData, {
     headers: {
       "Content-Type": catalogue.imageMimeType,
       "Cache-Control": "public, max-age=86400",
