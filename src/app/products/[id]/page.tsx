@@ -8,12 +8,13 @@ import { siteConfig } from "@/lib/siteConfig";
 
 export const revalidate = 60;
 
-type ProductPageParams = {
+type ProductPageParams = Promise<{
   id: string;
-};
+}>;
 
 export async function generateMetadata({ params }: { params: ProductPageParams }): Promise<Metadata> {
-  const product = await getProductById(params.id);
+  const { id } = await params;
+  const product = await getProductById(id);
 
   if (!product) {
     return {
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: { params: ProductPageParams }
     };
   }
 
-  const canonical = new URL(`/products/${params.id}`, siteConfig.url).toString();
+  const canonical = new URL(`/products/${id}`, siteConfig.url).toString();
   const ogImage = new URL(product.imageUrl ?? siteConfig.ogImage, siteConfig.url).toString();
   const description = product.description?.slice(0, 160) ?? siteConfig.description;
 
@@ -52,7 +53,8 @@ export async function generateMetadata({ params }: { params: ProductPageParams }
 }
 
 export default async function PublicProductDetailPage({ params }: { params: ProductPageParams }) {
-  const product = await getProductById(params.id);
+  const { id } = await params;
+  const product = await getProductById(id);
 
   if (!product) {
     notFound();

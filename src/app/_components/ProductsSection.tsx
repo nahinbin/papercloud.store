@@ -5,7 +5,7 @@ import { listHomeProducts } from "@/lib/productDb";
 import { getUserBySessionToken } from "@/lib/authDb";
 
 async function getCurrentUser() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("session")?.value;
   if (!token) return null;
   return getUserBySessionToken(token);
