@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "./prisma";
 
 export interface Catalogue {
@@ -16,6 +17,8 @@ export interface Catalogue {
   createdAt: number;
   updatedAt: number;
 }
+
+export type CatalogueSummary = Pick<Catalogue, "id" | "title" | "slug" | "description" | "imageUrl" | "linkUrl">;
 
 function normalizeCatalogue(record: any, includeData = false): Catalogue {
   return {
@@ -71,6 +74,47 @@ export async function listCatalogues(activeOnly = false): Promise<Catalogue[]> {
     console.error("Error fetching catalogues:", error);
     return [];
   }
+}
+
+const cachedActiveCatalogueSummaries = unstable_cache(
+  async () => {
+    if (!(prisma as any).catalogue) {
+      console.warn("Catalogue model not available. Please run: npx prisma generate && npx prisma migrate dev");
+      return [];
+    }
+
+    const catalogues = await (prisma as any).catalogue.findMany({
+      where: { isActive: true },
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        imageUrl: true,
+        imageData: true,
+        imageMimeType: true,
+        linkUrl: true,
+      },
+    });
+
+    return catalogues.map((catalogue: any) => ({
+      id: catalogue.id,
+      title: catalogue.title,
+      slug: catalogue.slug ?? undefined,
+      description: catalogue.description ?? undefined,
+      imageUrl: catalogue.imageData
+        ? `/api/catalogues/${catalogue.id}/image`
+        : catalogue.imageUrl ?? undefined,
+      linkUrl: catalogue.linkUrl ?? undefined,
+    }));
+  },
+  ["catalogues", "active", "summary"],
+  { revalidate: 1800 },
+);
+
+export async function listActiveCatalogueSummaries(): Promise<CatalogueSummary[]> {
+  return cachedActiveCatalogueSummaries() as Promise<CatalogueSummary[]>;
 }
 
 export async function getCatalogueById(id: string): Promise<Catalogue | null> {

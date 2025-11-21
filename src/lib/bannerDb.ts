@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "./prisma";
 
 export interface Banner {
@@ -18,6 +19,8 @@ export interface Banner {
   createdAt: number;
   updatedAt: number;
 }
+
+export type BannerSummary = Pick<Banner, "id" | "title" | "imageUrl" | "mobileImageUrl" | "desktopImageUrl" | "linkUrl" | "order">;
 
 export async function createBanner(input: Omit<Banner, "id" | "createdAt" | "updatedAt">): Promise<Banner> {
   try {
@@ -114,6 +117,48 @@ export async function listBanners(activeOnly: boolean = false): Promise<Banner[]
     console.error("Error fetching banners:", error);
     return [];
   }
+}
+
+const cachedActiveBanners = unstable_cache(
+  async () => {
+    if (!(prisma as any).banner) {
+      console.warn("Banner model not available. Please run: npx prisma generate && npx prisma migrate dev");
+      return [];
+    }
+
+    const banners = await (prisma as any).banner.findMany({
+      where: { isActive: true },
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        title: true,
+        imageUrl: true,
+        imageData: true,
+        mobileImageUrl: true,
+        mobileImageData: true,
+        desktopImageUrl: true,
+        desktopImageData: true,
+        linkUrl: true,
+        order: true,
+      },
+    });
+
+    return banners.map((banner: any) => ({
+      id: banner.id,
+      title: banner.title ?? undefined,
+      imageUrl: banner.imageData ? `/api/banners/${banner.id}/image` : (banner.imageUrl ?? undefined),
+      mobileImageUrl: banner.mobileImageData ? `/api/banners/${banner.id}/mobile-image` : (banner.mobileImageUrl ?? undefined),
+      desktopImageUrl: banner.desktopImageData ? `/api/banners/${banner.id}/desktop-image` : (banner.desktopImageUrl ?? undefined),
+      linkUrl: banner.linkUrl ?? undefined,
+      order: banner.order,
+    }));
+  },
+  ["banners", "active", "summary"],
+  { revalidate: 900 },
+);
+
+export async function listActiveBannerSummaries(): Promise<BannerSummary[]> {
+  return cachedActiveBanners() as Promise<BannerSummary[]>;
 }
 
 export async function getBannerById(id: string): Promise<Banner | null> {

@@ -1,5 +1,11 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "./prisma";
 import type { Product } from "@/types/product";
+
+export type ProductSummary = Pick<
+  Product,
+  "id" | "title" | "description" | "price" | "imageUrl" | "brand" | "stockQuantity"
+>;
 
 export async function createProduct(input: Omit<Product, "id" | "createdAt" | "updatedAt">): Promise<Product> {
   const product = await prisma.product.create({
@@ -94,6 +100,43 @@ export async function listProducts(): Promise<Product[]> {
     createdAt: product.createdAt.getTime(),
     updatedAt: product.updatedAt.getTime(),
   }));
+}
+
+const cachedHomeProducts = unstable_cache(
+  async (limit: number) => {
+    const products = await prisma.product.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        price: true,
+        imageUrl: true,
+        imageData: true,
+        brand: true,
+        stockQuantity: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return products.map((product) => ({
+      id: product.id,
+      title: product.title,
+      description: product.description ?? undefined,
+      price: product.price,
+      imageUrl: product.imageData ? `/api/products/${product.id}/image` : (product.imageUrl ?? undefined),
+      brand: product.brand ?? undefined,
+      stockQuantity: product.stockQuantity ?? undefined,
+    }));
+  },
+  ["home", "products", "summary"],
+  { revalidate: 60 },
+);
+
+export async function listHomeProducts(limit = 12): Promise<ProductSummary[]> {
+  return cachedHomeProducts(limit) as Promise<ProductSummary[]>;
 }
 
 export async function getProductById(id: string): Promise<Product | null> {

@@ -12,7 +12,7 @@ interface Banner {
   desktopImageUrl?: string;
   linkUrl?: string;
   order: number;
-  isActive: boolean;
+  isActive?: boolean;
 }
 
 interface BannerCarouselProps {
@@ -93,7 +93,7 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
                   alt="Banner"
                   fill
                   className="object-cover md:hidden"
-                  unoptimized={banner.mobileImageUrl.startsWith("http")}
+                  sizes="100vw"
                 />
               )}
               {/* Desktop Image */}
@@ -103,7 +103,7 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
                   alt="Banner"
                   fill
                   className="object-cover hidden md:block"
-                  unoptimized={banner.desktopImageUrl.startsWith("http")}
+                  sizes="100vw"
                 />
               )}
               {/* Fallback to old imageUrl if mobile/desktop not set */}
@@ -113,7 +113,7 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
                   alt="Banner"
                   fill
                   className="object-cover"
-                  unoptimized={banner.imageUrl.startsWith("http")}
+                  sizes="100vw"
                 />
               )}
               {/* No image fallback */}
