@@ -49,6 +49,7 @@ export default function OrderDetailPage() {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   useEffect(() => {
+    // Fetch auth first, then order if authorized
     fetch("/api/auth/me")
       .then(async (r) => {
         if (r.ok) {
@@ -60,7 +61,7 @@ export default function OrderDetailPage() {
             router.push("/");
             return;
           }
-          // Fetch order details
+          // Fetch order after auth check passes
           fetchOrder();
         } else {
           setIsAdmin(false);

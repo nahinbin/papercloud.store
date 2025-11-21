@@ -49,6 +49,7 @@ export default function OrdersPage() {
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   useEffect(() => {
+    // Fetch auth first, then orders if authorized
     fetch("/api/auth/me")
       .then(async (r) => {
         if (r.ok) {
@@ -60,7 +61,7 @@ export default function OrdersPage() {
             router.push("/");
             return;
           }
-          // Fetch orders
+          // Fetch orders after auth check passes
           fetchOrders();
         } else {
           setIsAdmin(false);

@@ -196,6 +196,13 @@ export default function Navbar() {
 												Logged in as <span className="font-semibold">@{username}</span>
 											</div>
 										)}
+										<Link
+											href="/account"
+											onClick={closeMenu}
+											className="flex items-center gap-2 rounded-lg border px-4 py-3 hover:bg-zinc-50 transition-colors"
+										>
+											👤 My Account
+										</Link>
 										{isAdmin && (
 											<Link
 												href="/admin"

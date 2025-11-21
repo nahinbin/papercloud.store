@@ -85,13 +85,18 @@ export default async function OrderConfirmationPage({
           </div>
 
           {/* Download Receipt CTA */}
-          <div className="mb-8">
+          <div className="mb-8 text-center">
             <p className="text-sm text-zinc-600 mb-4">
               A confirmation email has been sent to <span className="font-semibold">{order.email}</span>
             </p>
-            <p className="text-base font-medium text-zinc-800 mb-4">
-              Download your receipt for your records:
-            </p>
+            <a
+              href={`/api/account/orders/${order.id}/receipt`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block rounded bg-black px-6 py-3 text-white hover:bg-zinc-800 transition-colors font-medium"
+            >
+              Download Receipt
+            </a>
           </div>
         </div>
 

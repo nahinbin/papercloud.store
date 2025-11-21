@@ -27,7 +27,10 @@ export async function GET() {
   }
 
   const banners = await listBanners(false); // Get all banners (including inactive) for admin
-  return NextResponse.json({ banners });
+  const response = NextResponse.json({ banners });
+  // Cache for 30 seconds, stale-while-revalidate for 60 seconds
+  response.headers.set("Cache-Control", "private, s-maxage=30, stale-while-revalidate=60");
+  return response;
 }
 
 export async function POST(request: Request) {

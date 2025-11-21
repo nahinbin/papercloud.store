@@ -17,7 +17,8 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    // Fetch auth and stats in parallel for better performance
+    const authPromise = fetch("/api/auth/me")
       .then(async (r) => {
         if (r.ok) {
           const data = await r.json();
@@ -27,19 +28,22 @@ export default function AdminDashboard() {
           if (!admin) {
             router.push("/");
           }
+          return true;
         } else {
           setIsAdmin(false);
           router.push("/");
+          return false;
         }
       })
       .catch(() => {
         setIsAdmin(false);
         router.push("/");
+        return false;
       })
       .finally(() => setLoading(false));
     
-    // Fetch stats
-    fetch("/api/admin/stats")
+    // Fetch stats in parallel
+    const statsPromise = fetch("/api/admin/stats")
       .then(async (res) => {
         if (res.ok) {
           const data = await res.json();
@@ -49,6 +53,9 @@ export default function AdminDashboard() {
       .catch(() => {
         // Ignore errors
       });
+
+    // Both requests run in parallel
+    Promise.all([authPromise, statsPromise]);
   }, [router]);
 
   if (loading || isAdmin === null) {

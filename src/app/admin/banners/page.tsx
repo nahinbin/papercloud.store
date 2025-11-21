@@ -41,6 +41,7 @@ export default function BannersPage() {
   const [desktopImagePreview, setDesktopImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
+    // Fetch auth first, then banners if authorized
     fetch("/api/auth/me")
       .then(async (r) => {
         if (r.ok) {
@@ -52,6 +53,7 @@ export default function BannersPage() {
             router.push("/");
             return;
           }
+          // Fetch banners after auth check passes
           fetchBanners();
         } else {
           setIsAdmin(false);
@@ -66,6 +68,7 @@ export default function BannersPage() {
 
   const fetchBanners = async () => {
     try {
+      setLoading(true);
       const res = await fetch("/api/admin/banners");
       if (res.ok) {
         const data = await res.json();

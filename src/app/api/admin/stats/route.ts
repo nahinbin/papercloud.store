@@ -25,12 +25,15 @@ export async function GET() {
     prisma.order.count(),
   ]);
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     stats: {
       users: usersCount,
       products: productsCount,
       orders: ordersCount,
     },
   });
+  // Cache stats for 60 seconds
+  response.headers.set("Cache-Control", "private, s-maxage=60, stale-while-revalidate=120");
+  return response;
 }
 

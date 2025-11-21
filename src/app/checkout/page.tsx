@@ -35,6 +35,44 @@ export default function CheckoutPage() {
     zip: "",
     country: "US",
   });
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [showNewAddressForm, setShowNewAddressForm] = useState(true);
+  const [saveAddress, setSaveAddress] = useState(false);
+
+  // Load saved addresses if user is logged in
+  useEffect(() => {
+    const loadAddresses = async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const addressRes = await fetch("/api/account/addresses");
+          if (addressRes.ok) {
+            const data = await addressRes.json();
+            setSavedAddresses(data.addresses || []);
+            // Auto-select default address if available
+            const defaultAddress = data.addresses?.find((a: any) => a.isDefault);
+            if (defaultAddress) {
+              setSelectedAddressId(defaultAddress.id);
+              setShippingInfo({
+                email: "",
+                name: defaultAddress.name,
+                address: defaultAddress.address,
+                city: defaultAddress.city,
+                state: defaultAddress.state || "",
+                zip: defaultAddress.zip,
+                country: defaultAddress.country,
+              });
+              setShowNewAddressForm(false);
+            }
+          }
+        }
+      } catch (error) {
+        // User not logged in or error loading addresses - continue with manual entry
+      }
+    };
+    loadAddresses();
+  }, []);
 
   // Load Braintree script (only if order has a price)
   useEffect(() => {
@@ -357,6 +395,28 @@ export default function CheckoutPage() {
     try {
       // For free orders, skip payment processing
       if (isFreeOrder) {
+        // Save address if requested
+        if (saveAddress && !selectedAddressId) {
+          try {
+            await fetch("/api/account/addresses", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: shippingInfo.name,
+                address: shippingInfo.address,
+                city: shippingInfo.city,
+                state: shippingInfo.state,
+                zip: shippingInfo.zip,
+                country: shippingInfo.country,
+                isDefault: savedAddresses.length === 0, // Set as default if first address
+              }),
+            });
+          } catch (error) {
+            // Continue with checkout even if address save fails
+            console.error("Failed to save address:", error);
+          }
+        }
+
         const res = await fetch("/api/braintree/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -399,6 +459,28 @@ export default function CheckoutPage() {
 
       // Request payment method nonce
       const payload = await dropinInstance.requestPaymentMethod();
+
+      // Save address if requested
+      if (saveAddress && !selectedAddressId) {
+        try {
+          await fetch("/api/account/addresses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: shippingInfo.name,
+              address: shippingInfo.address,
+              city: shippingInfo.city,
+              state: shippingInfo.state,
+              zip: shippingInfo.zip,
+              country: shippingInfo.country,
+              isDefault: savedAddresses.length === 0, // Set as default if first address
+            }),
+          });
+        } catch (error) {
+          // Continue with checkout even if address save fails
+          console.error("Failed to save address:", error);
+        }
+      }
 
       // Submit to checkout API
       const res = await fetch("/api/braintree/checkout", {
@@ -469,6 +551,46 @@ export default function CheckoutPage() {
           {/* Shipping Information */}
           <div>
             <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
+            
+            {/* Saved Addresses Selector */}
+            {savedAddresses.length > 0 && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">Use Saved Address</label>
+                <select
+                  value={selectedAddressId || ""}
+                  onChange={(e) => {
+                    const addressId = e.target.value;
+                    setSelectedAddressId(addressId || null);
+                    if (addressId) {
+                      const address = savedAddresses.find((a) => a.id === addressId);
+                      if (address) {
+                        setShippingInfo({
+                          email: shippingInfo.email, // Keep email
+                          name: address.name,
+                          address: address.address,
+                          city: address.city,
+                          state: address.state || "",
+                          zip: address.zip,
+                          country: address.country,
+                        });
+                        setShowNewAddressForm(false);
+                      }
+                    } else {
+                      setShowNewAddressForm(true);
+                    }
+                  }}
+                  className="w-full border rounded px-3 py-2 mb-2"
+                >
+                  <option value="">Enter new address</option>
+                  {savedAddresses.map((address) => (
+                    <option key={address.id} value={address.id}>
+                      {address.label || "Address"} - {address.name} {address.isDefault ? "(Default)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Email *</label>
@@ -482,6 +604,8 @@ export default function CheckoutPage() {
                   className="w-full border rounded px-3 py-2"
                 />
               </div>
+            {showNewAddressForm && (
+              <>
               <div>
                 <label className="block text-sm font-medium mb-1">Full Name *</label>
                 <input
@@ -557,6 +681,21 @@ export default function CheckoutPage() {
                   />
                 </div>
               </div>
+              {savedAddresses.length > 0 && (
+                <div>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={saveAddress}
+                      onChange={(e) => setSaveAddress(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-sm">Save this address to my account</span>
+                  </label>
+                </div>
+              )}
+              </>
+            )}
             </div>
           </div>
 

@@ -7,18 +7,13 @@ export async function GET() {
   const cookieStore = await cookies();
   const token = cookieStore.get("session")?.value;
   const user = await getUserBySessionToken(token);
-  
+
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
-  // Check if admin
-  const isAdmin = user.isAdmin || user.username === "@admin" || user.username === "admin";
-  if (!isAdmin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const orders = await prisma.order.findMany({
+    where: { userId: user.id },
     include: {
       items: true,
     },
@@ -26,7 +21,7 @@ export async function GET() {
   });
 
   const response = NextResponse.json({ orders });
-  // Cache for 10 seconds (orders change frequently)
+  // Cache for 10 seconds (orders can change)
   response.headers.set("Cache-Control", "private, s-maxage=10, stale-while-revalidate=30");
   return response;
 }
