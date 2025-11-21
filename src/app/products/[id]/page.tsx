@@ -1,18 +1,58 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { getProductById } from "@/lib/productDb";
 import AddToCartButton from "@/components/AddToCartButton";
+import { siteConfig } from "@/lib/siteConfig";
 
 export const revalidate = 60;
 
-export default async function PublicProductDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const product = await getProductById(id);
+type ProductPageParams = {
+  id: string;
+};
+
+export async function generateMetadata({ params }: { params: ProductPageParams }): Promise<Metadata> {
+  const product = await getProductById(params.id);
+
+  if (!product) {
+    return {
+      title: "Product not found",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const canonical = new URL(`/products/${params.id}`, siteConfig.url).toString();
+  const ogImage = new URL(product.imageUrl ?? siteConfig.ogImage, siteConfig.url).toString();
+  const description = product.description?.slice(0, 160) ?? siteConfig.description;
+
+  return {
+    title: `${product.title} | ${siteConfig.name}`,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title: product.title,
+      description,
+      url: canonical,
+      type: "product",
+      images: [
+        {
+          url: ogImage,
+          alt: product.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.title,
+      description,
+      images: [ogImage],
+    },
+  };
+}
+
+export default async function PublicProductDetailPage({ params }: { params: ProductPageParams }) {
+  const product = await getProductById(params.id);
 
   if (!product) {
     notFound();
@@ -38,7 +78,8 @@ export default async function PublicProductDetailPage({
                   width={800}
                   height={800}
                   className="w-full rounded-lg border shadow-sm"
-                  unoptimized={product.imageUrl.startsWith("http")}
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  priority
                 />
               </div>
             ) : (
