@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: { params: ProductPageParams }
       title: product.title,
       description,
       url: canonical,
-      type: "product",
+      type: "website",
       images: [
         {
           url: ogImage,
