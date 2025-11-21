@@ -5,6 +5,7 @@ import { listProducts } from "@/lib/productDb";
 import { listBanners } from "@/lib/bannerDb";
 import { getUserBySessionToken } from "@/lib/authDb";
 import BannerCarousel from "@/components/BannerCarousel";
+import { listCatalogues } from "@/lib/catalogueDb";
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
@@ -15,11 +16,7 @@ async function getCurrentUser() {
   return user;
 }
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ category?: string }>;
-}) {
+export default async function Home() {
   // Fetch data in parallel on the server
   // Wrap banner fetching in try-catch to handle cases where Banner model doesn't exist yet
   let banners: Awaited<ReturnType<typeof listBanners>> = [];
@@ -30,29 +27,13 @@ export default async function Home({
     console.warn("Could not load banners:", error);
   }
 
-  const [{ category }, user, products] = await Promise.all([
-    searchParams,
+  const [catalogues, user, products] = await Promise.all([
+    listCatalogues(true),
     getCurrentUser(),
     listProducts(),
   ]);
 
   const isAdmin = user?.isAdmin || user?.username === "admin" || false;
-
-  const categories = Array.from(
-    new Set(
-      products
-        .map((product) => product.category?.trim())
-        .filter((value): value is string => !!value),
-    ),
-  );
-
-  const filteredProducts = category
-    ? products.filter(
-        (product) =>
-          product.category &&
-          product.category.toLowerCase() === category.toLowerCase(),
-      )
-    : products;
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-zinc-50 via-white to-white text-zinc-900">
@@ -61,58 +42,42 @@ export default async function Home({
         <BannerCarousel banners={banners} />
       </div>
 
-      {categories.length > 0 && (
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-8">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">
-              Browse by catalogue
-            </p>
+      {catalogues.length > 0 && (
+        <div className="mx-auto max-w-6xl px-4 pt-6">
+          <div className="text-center">
+            <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Catalogues</p>
           </div>
-          {category && (
-            <Link
-              href="/"
-              className="text-xs font-medium text-zinc-500 underline-offset-4 hover:text-zinc-800 hover:underline"
-            >
-              Clear filter
-            </Link>
-          )}
-        </div>
-      )}
-
-      {categories.length > 0 && (
-        <div className="mx-auto max-w-6xl px-4 pt-3">
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            <Link
-              href="/"
-              className={`flex min-w-[7rem] items-center gap-3 rounded-2xl border px-4 py-2 text-xs font-medium transition ${
-                !category
-                  ? "border-zinc-900/10 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white/80 text-zinc-700 hover:border-zinc-300"
-              }`}
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-800 text-[11px] font-semibold text-white">
-                All
-              </span>
-              <span>All items</span>
-            </Link>
-            {categories.map((cat) => {
-              const isActive =
-                category &&
-                cat.toLowerCase() === category.toLowerCase();
+          <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8">
+            {catalogues.map((catalogue) => {
+              const href =
+                catalogue.linkUrl ||
+                `/catalogues/${encodeURIComponent(catalogue.slug || catalogue.id)}`;
               return (
                 <Link
-                  key={cat}
-                  href={`/?category=${encodeURIComponent(cat)}`}
-                  className={`flex min-w-[7rem] items-center gap-3 rounded-2xl border px-4 py-2 text-xs font-medium transition ${
-                    isActive
-                      ? "border-zinc-900/10 bg-zinc-900 text-white"
-                      : "border-zinc-200 bg-white/80 text-zinc-700 hover:border-zinc-300"
-                  }`}
+                  key={catalogue.id}
+                  href={href}
+                  className="group relative aspect-square w-full overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-sm transition hover:-translate-y-1"
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900/90 text-[11px] font-semibold text-white">
-                    {cat.charAt(0).toUpperCase()}
-                  </span>
-                  <span className="line-clamp-1">{cat}</span>
+                  {catalogue.imageUrl ? (
+                    <Image
+                      src={catalogue.imageUrl}
+                      alt={catalogue.title}
+                      fill
+                      className="object-cover"
+                      unoptimized={catalogue.imageUrl?.startsWith("http") ?? false}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-zinc-50 text-xl font-semibold text-zinc-300">
+                      {catalogue.title.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-90" />
+                  <div className="absolute inset-x-0 bottom-0 px-2 pb-2 pt-1 text-white">
+                    <p className="text-[11px] font-semibold leading-tight line-clamp-1">{catalogue.title}</p>
+                    {catalogue.description && (
+                      <p className="text-[10px] text-white/80 line-clamp-1">{catalogue.description}</p>
+                    )}
+                  </div>
                 </Link>
               );
             })}
@@ -124,22 +89,14 @@ export default async function Home({
         <section id="products" className="space-y-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">Catalogue</p>
               <h2 className="text-2xl font-semibold text-zinc-900">Available now</h2>
             </div>
-            <span className="text-sm text-zinc-500">
-              {filteredProducts.length} item{filteredProducts.length === 1 ? "" : "s"}
-              {category ? ` · ${category}` : ""}
-            </span>
+            <span className="text-sm text-zinc-500">{products.length} item{products.length === 1 ? "" : "s"}</span>
           </div>
 
-          {filteredProducts.length === 0 ? (
+          {products.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-zinc-200 bg-white/60 p-10 text-center shadow-sm">
-              <p className="text-zinc-600">
-                {category
-                  ? "No products in this catalogue yet."
-                  : "No products available yet."}
-              </p>
+              <p className="text-zinc-600">No products available yet.</p>
               {isAdmin && (
                 <Link
                   href="/admin/products/new"
@@ -151,7 +108,7 @@ export default async function Home({
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredProducts.map((product) => (
+              {products.map((product) => (
                 <Link
                   key={product.id}
                   href={`/products/${product.id}`}

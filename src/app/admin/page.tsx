@@ -140,6 +140,19 @@ export default function AdminDashboard() {
             </Link>
           </div>
 
+          <div className="p-6 border-2 border-zinc-200 rounded-lg bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Catalogues</h2>
+            </div>
+            <p className="text-sm text-zinc-600 mb-4">Control the square catalogue tiles.</p>
+            <Link
+              href="/admin/catalogues"
+              className="inline-block rounded bg-black px-4 py-2 text-white text-sm hover:bg-zinc-800 transition-colors"
+            >
+              Manage Catalogues →
+            </Link>
+          </div>
+
         </div>
 
         <div className="mt-8">

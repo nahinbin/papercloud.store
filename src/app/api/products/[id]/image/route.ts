@@ -28,7 +28,12 @@ export async function GET(
 
     // Fallback to imageUrl if no imageData
     if (product.imageUrl) {
-      return NextResponse.redirect(product.imageUrl);
+      try {
+        const redirectUrl = new URL(product.imageUrl, request.url);
+        return NextResponse.redirect(redirectUrl.toString());
+      } catch (error) {
+        console.error("Invalid product.imageUrl:", product.imageUrl, error);
+      }
     }
 
     return NextResponse.json({ error: "No image found" }, { status: 404 });
