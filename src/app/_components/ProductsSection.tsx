@@ -17,8 +17,8 @@ export default async function ProductsSection() {
   const isAdmin = Boolean(user?.isAdmin || user?.username === "admin");
 
   return (
-    <section id="products" className="space-y-5 pb-16 pt-10">
-      <div className="flex items-center justify-between">
+    <section id="products" className="space-y-5 pb-16 pt-10" suppressHydrationWarning>
+      <div className="flex items-center justify-between" suppressHydrationWarning>
         <div>
           <h2 className="text-2xl font-semibold text-zinc-900">Available now</h2>
         </div>
@@ -45,6 +45,7 @@ export default async function ProductsSection() {
             <Link
               key={product.id}
               href={`/products/${product.id}`}
+              prefetch={index < 6}
               className="group rounded-3xl border border-zinc-100 bg-white/80 p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
               {product.imageUrl ? (
@@ -53,9 +54,12 @@ export default async function ProductsSection() {
                     src={product.imageUrl}
                     alt={product.title}
                     fill
-                    priority={index === 0}
+                    priority={index < 3}
+                    loading={index < 3 ? "eager" : "lazy"}
                     sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
                     className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    placeholder="blur"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHhYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQADAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                   />
                 </div>
               ) : (

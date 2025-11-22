@@ -16,25 +16,54 @@ export default function Navbar() {
 
 	useEffect(() => {
  		let cancelled = false;
- 		fetch("/api/auth/me").then(async (r) => {
- 			if (!cancelled) {
+ 		
+		const checkAuth = async () => {
+			try {
+				const r = await fetch("/api/auth/me", {
+					method: "GET",
+					credentials: "include",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				});
+				
+				if (cancelled) return;
+				
 				if (r.ok) {
-					const data = await r.json();
-					const user = data.user;
-					setIsAuthed(true);
-					setUsername(user?.username || null);
-					setIsAdmin(user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false);
+					try {
+						const data = await r.json();
+						const user = data.user;
+						if (!cancelled) {
+							setIsAuthed(true);
+							setUsername(user?.username || null);
+							setIsAdmin(user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false);
+						}
+					} catch (parseError) {
+						if (!cancelled) {
+							setIsAuthed(false);
+							setIsAdmin(false);
+							setUsername(null);
+						}
+					}
 				} else {
+					if (!cancelled) {
+						setIsAuthed(false);
+						setIsAdmin(false);
+						setUsername(null);
+					}
+				}
+			} catch (error) {
+				// Silently handle network errors - user might be offline or server unavailable
+				if (!cancelled) {
 					setIsAuthed(false);
 					setIsAdmin(false);
 					setUsername(null);
 				}
 			}
-		}).catch(() => {
-			setIsAuthed(false);
-			setIsAdmin(false);
-			setUsername(null);
-		});
+		};
+		
+		checkAuth();
+		
  		return () => { cancelled = true; };
  	}, []);
 
@@ -51,8 +80,8 @@ export default function Navbar() {
 
 	return (
 		<>
-			<header className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-				<div className="mx-auto flex max-w-6xl items-center px-4 py-3 gap-4">
+			<header className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60" suppressHydrationWarning>
+				<div className="mx-auto flex max-w-6xl items-center px-4 py-3 gap-4" suppressHydrationWarning>
 					<div className="flex flex-1 justify-start">
 						<Link
 							href="/cart"

@@ -5,7 +5,7 @@ type SkeletonProps = {
 };
 
 export function Skeleton({ className }: SkeletonProps) {
-  const classes = ["skeleton rounded-lg", className].filter(Boolean).join(" ");
+  const classes = ["skeleton rounded-lg animate-pulse bg-gradient-to-r from-zinc-100 via-zinc-50 to-zinc-100 bg-[length:200%_100%]", className].filter(Boolean).join(" ");
   return <div aria-hidden className={classes} />;
 }
 

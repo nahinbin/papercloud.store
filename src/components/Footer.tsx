@@ -3,10 +3,11 @@ import Image from "next/image";
 import { siteConfig } from "@/lib/siteConfig";
 
 export default function Footer() {
+  // Get current year - safe for hydration as it only changes once per year
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-zinc-200 bg-white">
+    <footer className="border-t border-zinc-200 bg-white" suppressHydrationWarning>
       <div className="mx-auto max-w-6xl px-4 py-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand Section */}

@@ -6,7 +6,7 @@ import { getProductById } from "@/lib/productDb";
 import AddToCartButton from "@/components/AddToCartButton";
 import { siteConfig } from "@/lib/siteConfig";
 
-export const revalidate = 60;
+export const revalidate = 300; // Revalidate every 5 minutes (product data is cached in getProductById)
 
 type ProductPageParams = Promise<{
   id: string;
@@ -82,6 +82,8 @@ export default async function PublicProductDetailPage({ params }: { params: Prod
                   className="w-full rounded-lg border shadow-sm"
                   sizes="(min-width: 1024px) 50vw, 100vw"
                   priority
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHhYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQADAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                 />
               </div>
             ) : (

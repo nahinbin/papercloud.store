@@ -11,7 +11,7 @@ export default function CataloguesSkeleton() {
           <div
             // eslint-disable-next-line react/no-array-index-key
             key={index}
-            className="aspect-square w-full animate-pulse rounded-xl border border-zinc-100 bg-gradient-to-br from-white to-zinc-100"
+            className="aspect-square w-full animate-pulse rounded-xl border border-zinc-100 bg-gradient-to-r from-zinc-100 via-zinc-50 to-zinc-100 bg-[length:200%_100%]"
           />
         ))}
       </div>

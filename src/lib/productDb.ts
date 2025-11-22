@@ -139,41 +139,77 @@ export async function listHomeProducts(limit = 12): Promise<ProductSummary[]> {
   return cachedHomeProducts(limit) as Promise<ProductSummary[]>;
 }
 
+const cachedProductById = unstable_cache(
+  async (id: string) => {
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        price: true,
+        imageUrl: true,
+        imageData: true,
+        imageMimeType: true,
+        category: true,
+        brand: true,
+        sku: true,
+        stockQuantity: true,
+        weight: true,
+        dimensionsWidth: true,
+        dimensionsHeight: true,
+        dimensionsDepth: true,
+        color: true,
+        material: true,
+        condition: true,
+        tags: true,
+        shippingCost: true,
+        estimatedShippingDays: true,
+        returnPolicy: true,
+        warranty: true,
+        specifications: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!product) return null;
+
+    return {
+      id: product.id,
+      title: product.title,
+      description: product.description ?? undefined,
+      price: product.price,
+      // Use image URL endpoint if imageData exists, otherwise use imageUrl
+      imageUrl: product.imageData ? `/api/products/${product.id}/image` : (product.imageUrl ?? undefined),
+      imageData: product.imageData ? Buffer.from(product.imageData) : undefined,
+      imageMimeType: product.imageMimeType ?? undefined,
+      category: product.category ?? undefined,
+      brand: product.brand ?? undefined,
+      sku: product.sku ?? undefined,
+      stockQuantity: product.stockQuantity ?? undefined,
+      weight: product.weight ?? undefined,
+      dimensionsWidth: product.dimensionsWidth ?? undefined,
+      dimensionsHeight: product.dimensionsHeight ?? undefined,
+      dimensionsDepth: product.dimensionsDepth ?? undefined,
+      color: product.color ?? undefined,
+      material: product.material ?? undefined,
+      condition: product.condition ?? undefined,
+      tags: product.tags ?? undefined,
+      shippingCost: product.shippingCost ?? undefined,
+      estimatedShippingDays: product.estimatedShippingDays ?? undefined,
+      returnPolicy: product.returnPolicy ?? undefined,
+      warranty: product.warranty ?? undefined,
+      specifications: product.specifications ?? undefined,
+      createdAt: product.createdAt.getTime(),
+      updatedAt: product.updatedAt.getTime(),
+    };
+  },
+  ["product", "by-id"],
+  { revalidate: 300 }, // Cache for 5 minutes
+);
+
 export async function getProductById(id: string): Promise<Product | null> {
-  const product = await prisma.product.findUnique({
-    where: { id },
-  });
-
-  if (!product) return null;
-
-  return {
-    id: product.id,
-    title: product.title,
-    description: product.description ?? undefined,
-    price: product.price,
-    // Use image URL endpoint if imageData exists, otherwise use imageUrl
-    imageUrl: product.imageData ? `/api/products/${product.id}/image` : (product.imageUrl ?? undefined),
-    imageData: product.imageData ? Buffer.from(product.imageData) : undefined,
-    imageMimeType: product.imageMimeType ?? undefined,
-    category: product.category ?? undefined,
-    brand: product.brand ?? undefined,
-    sku: product.sku ?? undefined,
-    stockQuantity: product.stockQuantity ?? undefined,
-    weight: product.weight ?? undefined,
-    dimensionsWidth: product.dimensionsWidth ?? undefined,
-    dimensionsHeight: product.dimensionsHeight ?? undefined,
-    dimensionsDepth: product.dimensionsDepth ?? undefined,
-    color: product.color ?? undefined,
-    material: product.material ?? undefined,
-    condition: product.condition ?? undefined,
-    tags: product.tags ?? undefined,
-    shippingCost: product.shippingCost ?? undefined,
-    estimatedShippingDays: product.estimatedShippingDays ?? undefined,
-    returnPolicy: product.returnPolicy ?? undefined,
-    warranty: product.warranty ?? undefined,
-    specifications: product.specifications ?? undefined,
-    createdAt: product.createdAt.getTime(),
-    updatedAt: product.updatedAt.getTime(),
-  };
+  return cachedProductById(id) as Promise<Product | null>;
 }
 

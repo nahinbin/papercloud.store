@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getBannerById } from "@/lib/bannerDb";
 
-export const revalidate = 60;
+export const revalidate = 3600; // Revalidate every hour
 
 export async function GET(
   request: Request,
@@ -22,6 +22,7 @@ export async function GET(
         headers: {
           "Content-Type": banner.imageMimeType,
           "Cache-Control": "public, max-age=31536000, immutable",
+          "X-Content-Type-Options": "nosniff",
         },
       });
     }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getProductById } from "@/lib/productDb";
 
-export const revalidate = 60;
+export const revalidate = 3600; // Revalidate every hour (images don't change often)
 
 export async function GET(
   request: Request,
@@ -22,6 +22,7 @@ export async function GET(
         headers: {
           "Content-Type": product.imageMimeType,
           "Cache-Control": "public, max-age=31536000, immutable",
+          "X-Content-Type-Options": "nosniff",
         },
       });
     }

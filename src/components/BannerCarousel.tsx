@@ -76,11 +76,12 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
 
   return (
     <div
-      className="w-full overflow-x-auto bg-gray-50 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 snap-x snap-mandatory scroll-smooth"
+      className="banner-carousel w-full overflow-x-auto bg-gray-50 snap-x snap-mandatory scroll-smooth"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       ref={scrollContainerRef}
-      style={{ scrollbarWidth: "thin" }}
+      style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      suppressHydrationWarning
     >
       <div className="flex">
         {banners.map((banner) => {
@@ -92,8 +93,11 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
                   src={banner.mobileImageUrl}
                   alt="Banner"
                   fill
+                  priority={banners.indexOf(banner) === 0}
                   className="object-cover md:hidden"
                   sizes="100vw"
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHhYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQADAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                 />
               )}
               {/* Desktop Image */}
@@ -102,8 +106,11 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
                   src={banner.desktopImageUrl}
                   alt="Banner"
                   fill
+                  priority={banners.indexOf(banner) === 0}
                   className="object-cover hidden md:block"
                   sizes="100vw"
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHhYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQADAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                 />
               )}
               {/* Fallback to old imageUrl if mobile/desktop not set */}
@@ -112,8 +119,11 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
                   src={banner.imageUrl}
                   alt="Banner"
                   fill
+                  priority={banners.indexOf(banner) === 0}
                   className="object-cover"
                   sizes="100vw"
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHhYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQADAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                 />
               )}
               {/* No image fallback */}

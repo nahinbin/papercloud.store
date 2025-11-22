@@ -6,11 +6,11 @@ import CataloguesSkeleton from "./_components/CataloguesSkeleton";
 import ProductsSection from "./_components/ProductsSection";
 import ProductsSkeleton from "./_components/ProductsSkeleton";
 
-export const revalidate = 60; // Revalidate every 60 seconds
+export const revalidate = 300; // Revalidate every 5 minutes (data is cached in DB layer)
 
 export default function Home() {
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-zinc-50 via-white to-white text-zinc-900">
+    <div className="min-h-screen w-full bg-gradient-to-b from-zinc-50 via-white to-white text-zinc-900" suppressHydrationWarning>
       <Suspense fallback={<BannerSkeleton />}>
         <BannerSection />
       </Suspense>

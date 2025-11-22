@@ -9,7 +9,7 @@ export default async function BannerSection() {
   }
 
   return (
-    <div className="border-b border-zinc-100 bg-white/70">
+    <div className="border-b border-zinc-100 bg-white/70" suppressHydrationWarning>
       <BannerCarousel banners={banners} />
     </div>
   );

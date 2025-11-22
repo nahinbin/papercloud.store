@@ -10,8 +10,8 @@ export default async function CataloguesSection() {
   }
 
   return (
-    <section className="pt-6">
-      <div className="text-center">
+    <section className="pt-6" suppressHydrationWarning>
+      <div className="text-center" suppressHydrationWarning>
         <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Catalogues</p>
       </div>
       <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8">
@@ -22,6 +22,7 @@ export default async function CataloguesSection() {
             <Link
               key={catalogue.id}
               href={href}
+              prefetch={false}
               className="group relative aspect-square w-full overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-sm transition hover:-translate-y-1"
             >
               {catalogue.imageUrl ? (
@@ -29,8 +30,11 @@ export default async function CataloguesSection() {
                   src={catalogue.imageUrl}
                   alt={catalogue.title}
                   fill
+                  loading="lazy"
                   className="object-cover"
                   sizes="(min-width: 1280px) 12.5vw, (min-width: 1024px) 14vw, (min-width: 768px) 16vw, (min-width: 640px) 18vw, 25vw"
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHhYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQADAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-50 text-xl font-semibold text-zinc-300">

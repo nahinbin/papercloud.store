@@ -231,45 +231,82 @@ export async function deleteCatalogue(id: string): Promise<void> {
 }
 
 export async function getCatalogueWithProducts(identifier: string) {
-  if (!(prisma as any).catalogue) {
-    return null;
-  }
+  const cachedFn = unstable_cache(
+    async (id: string) => {
+      if (!(prisma as any).catalogue) {
+        return null;
+      }
 
-  const catalogue = await (prisma as any).catalogue.findFirst({
-    where: {
-      OR: [
-        { slug: identifier },
-        { id: identifier },
-      ],
-    },
-    include: {
-      products: {
-        include: {
-          product: true,
+      const catalogue = await (prisma as any).catalogue.findFirst({
+        where: {
+          OR: [
+            { slug: id },
+            { id: id },
+          ],
         },
-      },
-    },
-  });
+        include: {
+          products: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  title: true,
+                  description: true,
+                  price: true,
+                  imageUrl: true,
+                  imageData: true,
+                  brand: true,
+                  stockQuantity: true,
+                  createdAt: true,
+                  updatedAt: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
-  if (!catalogue) {
-    return null;
-  }
+      if (!catalogue) {
+        return null;
+      }
 
-  const normalized = normalizeCatalogue(
-    {
-      ...catalogue,
-      products: catalogue.products.map((cp: any) => ({
-        productId: cp.productId,
-      })),
+      const normalized = normalizeCatalogue(
+        {
+          ...catalogue,
+          products: catalogue.products.map((cp: any) => ({
+            productId: cp.productId,
+          })),
+        },
+        true,
+      );
+
+      const products = catalogue.products
+        .map((cp: any) => cp.product)
+        .filter(Boolean)
+        .map((product: any) => ({
+          id: product.id,
+          title: product.title,
+          description: product.description ?? undefined,
+          price: product.price,
+          imageUrl: product.imageData ? `/api/products/${product.id}/image` : (product.imageUrl ?? undefined),
+          brand: product.brand ?? undefined,
+          stockQuantity: product.stockQuantity ?? undefined,
+          createdAt: product.createdAt.getTime(),
+          updatedAt: product.updatedAt.getTime(),
+        }));
+
+      return {
+        catalogue: normalized,
+        products,
+      };
     },
-    true,
+    ["catalogue", "with-products", identifier],
+    { revalidate: 300 }, // Cache for 5 minutes
   );
 
-  const products = catalogue.products.map((cp: any) => cp.product).filter(Boolean);
-
-  return {
-    catalogue: normalized,
-    products,
-  };
+  return cachedFn(identifier) as Promise<{
+    catalogue: Catalogue;
+    products: any[];
+  } | null>;
 }
 

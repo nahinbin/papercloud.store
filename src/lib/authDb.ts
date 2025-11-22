@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { unstable_cache } from "next/cache";
 import { prisma } from "./prisma";
 
 export interface AuthUser {
@@ -77,14 +78,32 @@ export async function createSession(userId: string): Promise<string> {
   return token;
 }
 
+const cachedUserBySessionToken = unstable_cache(
+  async (token: string) => {
+    const session = await prisma.session.findUnique({
+      where: { token },
+      include: { 
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            isAdmin: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+    if (!session) return null;
+    return toPublicUser(session.user);
+  },
+  ["user", "session"],
+  { revalidate: 60 }, // Cache for 1 minute
+);
+
 export async function getUserBySessionToken(token: string | undefined | null): Promise<PublicUser | null> {
   if (!token) return null;
-  const session = await prisma.session.findUnique({
-    where: { token },
-    include: { user: true },
-  });
-  if (!session) return null;
-  return toPublicUser(session.user);
+  return cachedUserBySessionToken(token) as Promise<PublicUser | null>;
 }
 
 export async function deleteSession(token: string | undefined | null): Promise<void> {

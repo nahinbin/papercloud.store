@@ -38,6 +38,24 @@ body {
   }
 }
 
+/* Performance optimizations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Optimize image rendering */
+img {
+  content-visibility: auto;
+}
+
+/* Optimize animations for performance */
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    scroll-behavior: smooth;
+  }
+}
+
 /* Banner responsive aspect ratios */
 .banner-item {
   aspect-ratio: 750 / 392; /* Mobile: 750x392 */
@@ -47,6 +65,18 @@ body {
   .banner-item {
     aspect-ratio: 1904 / 382; /* Desktop: 1904x382 */
   }
+}
+
+/* Hide scrollbar for banner carousel */
+.banner-carousel::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.banner-carousel {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Print styles for receipt */

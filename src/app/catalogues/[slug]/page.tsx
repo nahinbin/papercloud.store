@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getCatalogueWithProducts } from "@/lib/catalogueDb";
 
-export const revalidate = 60;
+export const revalidate = 300; // Revalidate every 5 minutes (data is cached in DB layer)
 
 export default async function CataloguePage({
   params,
@@ -41,8 +41,11 @@ export default async function CataloguePage({
                 src={catalogue.imageUrl}
                 alt={catalogue.title}
                 fill
+                priority
                 className="object-cover"
-                unoptimized={catalogue.imageUrl?.startsWith("http") ?? false}
+                sizes="(min-width: 768px) 33vw, 100vw"
+                placeholder="blur"
+                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHhYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQADAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
               />
             </div>
           )}
@@ -54,10 +57,11 @@ export default async function CataloguePage({
           </div>
         ) : (
           <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {products.map((product: any) => (
+            {products.map((product: any, index: number) => (
               <Link
                 href={`/products/${product.id}`}
                 key={product.id}
+                prefetch={index < 6}
                 className="group rounded-3xl border border-zinc-100 bg-white/80 p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
               >
                 {product.imageUrl ? (
@@ -65,10 +69,13 @@ export default async function CataloguePage({
                     <Image
                       src={product.imageUrl}
                       alt={product.title}
-                      width={400}
-                      height={300}
+                      fill
+                      priority={index < 3}
+                      loading={index < 3 ? "eager" : "lazy"}
+                      sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
                       className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                      unoptimized={product.imageUrl?.startsWith("http") ?? false}
+                      placeholder="blur"
+                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHhYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQADAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                     />
                   </div>
                 ) : (
