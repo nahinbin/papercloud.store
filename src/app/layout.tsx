@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/contexts/CartContext";
 import ConditionalNavbar from "@/components/ConditionalNavbar";
+import Footer from "@/components/Footer";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { siteConfig } from "@/lib/siteConfig";
 
@@ -86,8 +87,11 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <CartProvider>
           <ConditionalNavbar />
-          <div suppressHydrationWarning>
-            {children}
+          <div suppressHydrationWarning className="flex min-h-screen flex-col">
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
           </div>
         </CartProvider>
         <SpeedInsights />
