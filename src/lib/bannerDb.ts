@@ -154,7 +154,7 @@ const cachedActiveBanners = unstable_cache(
     }));
   },
   ["banners", "active", "summary"],
-  { revalidate: 900 },
+  { revalidate: 60, tags: ["banners"] }, // Reduced to 60 seconds and added cache tag
 );
 
 export async function listActiveBannerSummaries(): Promise<BannerSummary[]> {

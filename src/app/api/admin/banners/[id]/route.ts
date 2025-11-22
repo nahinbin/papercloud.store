@@ -85,6 +85,10 @@ export async function PATCH(
       data: updateData,
     });
 
+    // Revalidate the cache after update
+    const { revalidateTag } = await import("next/cache");
+    revalidateTag("banners");
+
     return NextResponse.json({
       banner: {
         id: banner.id,
@@ -126,9 +130,23 @@ export async function DELETE(
   const { id } = await params;
 
   try {
+    // Check if banner exists first
+    const existingBanner = await (prisma as any).banner.findUnique({
+      where: { id },
+    });
+
+    if (!existingBanner) {
+      // Banner doesn't exist - return success (idempotent delete)
+      return NextResponse.json({ success: true, message: "Banner already deleted" });
+    }
+
     await (prisma as any).banner.delete({
       where: { id },
     });
+
+    // Revalidate the cache
+    const { revalidateTag } = await import("next/cache");
+    revalidateTag("banners");
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -138,6 +156,10 @@ export async function DELETE(
         { error: "Banner model not available. Please run: npx prisma generate && npx prisma migrate dev" },
         { status: 500 }
       );
+    }
+    // Handle Prisma "record not found" error gracefully
+    if (error?.code === 'P2025' || errorMessage.includes('Record to delete does not exist')) {
+      return NextResponse.json({ success: true, message: "Banner already deleted" });
     }
     return NextResponse.json({ error: errorMessage }, { status: 400 });
   }

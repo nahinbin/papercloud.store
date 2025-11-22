@@ -87,6 +87,10 @@ export async function POST(request: Request) {
       isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
     });
     
+    // Revalidate the cache after creating a new banner
+    const { revalidateTag } = await import("next/cache");
+    revalidateTag("banners");
+    
     return NextResponse.json({ id: banner.id, banner }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json(
