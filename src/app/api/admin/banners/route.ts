@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     
     // Revalidate the cache after creating a new banner
     const { revalidateTag } = await import("next/cache");
-    revalidateTag("banners");
+    revalidateTag("banners", "max");
     
     return NextResponse.json({ id: banner.id, banner }, { status: 201 });
   } catch (error: any) {

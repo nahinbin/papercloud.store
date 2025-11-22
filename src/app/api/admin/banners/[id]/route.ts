@@ -87,7 +87,7 @@ export async function PATCH(
 
     // Revalidate the cache after update
     const { revalidateTag } = await import("next/cache");
-    revalidateTag("banners");
+    revalidateTag("banners", "max");
 
     return NextResponse.json({
       banner: {
@@ -146,7 +146,7 @@ export async function DELETE(
 
     // Revalidate the cache
     const { revalidateTag } = await import("next/cache");
-    revalidateTag("banners");
+    revalidateTag("banners", "max");
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
