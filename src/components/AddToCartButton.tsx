@@ -9,6 +9,8 @@ interface AddToCartButtonProps {
   price: number;
   imageUrl?: string;
   stockQuantity?: number;
+  selectedColor?: string;
+  selectedSize?: string;
 }
 
 export default function AddToCartButton({ 
@@ -16,7 +18,9 @@ export default function AddToCartButton({
   title, 
   price, 
   imageUrl, 
-  stockQuantity 
+  stockQuantity,
+  selectedColor,
+  selectedSize,
 }: AddToCartButtonProps) {
   const { addItem } = useCart();
   const router = useRouter();
@@ -24,9 +28,18 @@ export default function AddToCartButton({
   const handleAddToCart = () => {
     if (!productId) return;
     
+    // Build title with variants
+    let itemTitle = title;
+    if (selectedColor || selectedSize) {
+      const variants = [];
+      if (selectedColor) variants.push(selectedColor);
+      if (selectedSize) variants.push(selectedSize);
+      itemTitle = `${title} (${variants.join(", ")})`;
+    }
+    
     addItem({
       productId,
-      title,
+      title: itemTitle,
       price,
       imageUrl,
       stockQuantity,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createProduct, listProducts } from "@/lib/productDb";
 import { getUserBySessionToken } from "@/lib/authDb";
+import { prisma } from "@/lib/prisma";
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
@@ -80,5 +81,22 @@ export async function POST(request: Request) {
     warranty: body.warranty || undefined,
     specifications: body.specifications || undefined,
   });
+
+  // Assign product to catalogues if catalogueIds are provided
+  if (body.catalogueIds && Array.isArray(body.catalogueIds) && body.catalogueIds.length > 0) {
+    try {
+      await (prisma as any).catalogueProduct.createMany({
+        data: body.catalogueIds.map((catalogueId: string) => ({
+          catalogueId,
+          productId: product.id!,
+        })),
+        skipDuplicates: true,
+      });
+    } catch (error: any) {
+      console.error("Error assigning product to catalogues:", error);
+      // Don't fail the request if catalogue assignment fails, product is already created
+    }
+  }
+
   return NextResponse.json({ id: product.id, product }, { status: 201 });
 }

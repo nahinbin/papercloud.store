@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { getProductById } from "@/lib/productDb";
 import AddToCartButton from "@/components/AddToCartButton";
+import ProductImageGallery from "@/components/ProductImageGallery";
+import ProductVariants from "@/components/ProductVariants";
+import ProductPageClient from "@/components/ProductPageClient";
 import { siteConfig } from "@/lib/siteConfig";
 
 export const revalidate = 300; // Revalidate every 5 minutes (product data is cached in getProductById)
@@ -60,6 +62,53 @@ export default async function PublicProductDetailPage({ params }: { params: Prod
     notFound();
   }
 
+  // Parse multiple images from specifications (stored as JSON)
+  let productImages: string[] = [];
+  if (product.specifications) {
+    try {
+      const parsed = JSON.parse(product.specifications);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        productImages = parsed.map((img: any) => img.url || product.imageUrl || "").filter(Boolean);
+      }
+    } catch {
+      // If not JSON, ignore
+    }
+  }
+  
+  // Fallback to single image if no multiple images found
+  if (productImages.length === 0 && product.imageUrl) {
+    productImages = [product.imageUrl];
+  }
+
+  // Parse color variants from color field (stored as JSON)
+  let colorVariants: string[] | undefined = undefined;
+  if (product.color) {
+    try {
+      const parsed = JSON.parse(product.color);
+      if (Array.isArray(parsed)) {
+        colorVariants = parsed;
+      }
+    } catch {
+      // If not JSON, treat as single color (legacy)
+      if (product.color) {
+        colorVariants = [product.color];
+      }
+    }
+  }
+
+  // Parse size variants from tags field (stored as JSON)
+  let sizeVariants: string[] | undefined = undefined;
+  if (product.tags) {
+    try {
+      const parsed = JSON.parse(product.tags);
+      if (Array.isArray(parsed)) {
+        sizeVariants = parsed;
+      }
+    } catch {
+      // If not JSON, ignore (tags might be regular text)
+    }
+  }
+
   const totalPrice = product.price + (product.shippingCost || 0);
 
   return (
@@ -68,41 +117,17 @@ export default async function PublicProductDetailPage({ params }: { params: Prod
         <Link href="/" className="inline-block mb-6 text-zinc-600 hover:text-black">
           ← Back to Store
         </Link>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Product Image */}
-          <div>
-            {product.imageUrl ? (
-              <div className="sticky top-8">
-                <Image
-                  src={product.imageUrl}
-                  alt={product.title}
-                  width={800}
-                  height={800}
-                  className="w-full rounded-lg border shadow-sm"
-                  sizes="(min-width: 1024px) 50vw, 100vw"
-                  priority
-                  placeholder="blur"
-                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHhYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQADAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
-                />
-              </div>
-            ) : (
-              <div className="w-full aspect-square bg-gray-100 rounded-lg border flex items-center justify-center">
-                <span className="text-gray-400">No Image</span>
-              </div>
-            )}
-          </div>
+          {/* Product Image Gallery */}
+          <ProductImageGallery images={productImages} productTitle={product.title} />
 
           {/* Product Info */}
           <div className="space-y-6">
             <div>
-              {product.brand && (
-                <p className="text-sm text-zinc-600 mb-2">{product.brand}</p>
-              )}
+              {product.brand && <p className="text-sm text-zinc-600 mb-2">{product.brand}</p>}
               <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
-              {product.sku && (
-                <p className="text-sm text-zinc-500 mb-4">SKU: {product.sku}</p>
-              )}
+              {product.sku && <p className="text-sm text-zinc-500 mb-4">SKU: {product.sku}</p>}
             </div>
 
             {/* Price Section */}
@@ -117,11 +142,24 @@ export default async function PublicProductDetailPage({ params }: { params: Prod
                 <p className="text-lg font-semibold text-zinc-700">Total: ${totalPrice.toFixed(2)}</p>
               )}
               {product.stockQuantity !== undefined && (
-                <p className={`text-sm mt-2 ${product.stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {product.stockQuantity > 0 ? `In Stock (${product.stockQuantity} available)` : 'Out of Stock'}
+                <p className={`text-sm mt-2 ${product.stockQuantity > 0 ? "text-green-600" : "text-red-600"}`}>
+                  {product.stockQuantity > 0
+                    ? `In Stock (${product.stockQuantity} available)`
+                    : "Out of Stock"}
                 </p>
               )}
             </div>
+
+            {/* Variants Selection - Client Component */}
+            <ProductPageClient
+              colorVariants={colorVariants}
+              sizeVariants={sizeVariants}
+              productId={product.id || ""}
+              title={product.title}
+              price={product.price}
+              imageUrl={productImages[0]}
+              stockQuantity={product.stockQuantity}
+            />
 
             {/* Quick Info */}
             <div className="grid grid-cols-2 gap-4">
@@ -137,18 +175,6 @@ export default async function PublicProductDetailPage({ params }: { params: Prod
                   <p className="font-medium">{product.category}</p>
                 </div>
               )}
-              {product.color && (
-                <div>
-                  <p className="text-xs text-zinc-500 mb-1">Color</p>
-                  <p className="font-medium">{product.color}</p>
-                </div>
-              )}
-              {product.material && (
-                <div>
-                  <p className="text-xs text-zinc-500 mb-1">Material</p>
-                  <p className="font-medium">{product.material}</p>
-                </div>
-              )}
             </div>
 
             {/* Description */}
@@ -156,14 +182,6 @@ export default async function PublicProductDetailPage({ params }: { params: Prod
               <div>
                 <h2 className="text-lg font-semibold mb-2">Description</h2>
                 <p className="text-zinc-700 whitespace-pre-line">{product.description}</p>
-              </div>
-            )}
-
-            {/* Specifications */}
-            {product.specifications && (
-              <div>
-                <h2 className="text-lg font-semibold mb-2">Specifications</h2>
-                <p className="text-zinc-700 whitespace-pre-line">{product.specifications}</p>
               </div>
             )}
 
@@ -177,23 +195,7 @@ export default async function PublicProductDetailPage({ params }: { params: Prod
                       Dimensions: {product.dimensionsWidth}" × {product.dimensionsHeight}" × {product.dimensionsDepth}"
                     </p>
                   )}
-                  {product.weight && (
-                    <p className="text-zinc-700">Weight: {product.weight} lbs</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Tags */}
-            {product.tags && (
-              <div>
-                <h2 className="text-lg font-semibold mb-2">Tags</h2>
-                <div className="flex flex-wrap gap-2">
-                  {product.tags.split(',').map((tag, idx) => (
-                    <span key={idx} className="px-3 py-1 bg-zinc-100 rounded-full text-sm text-zinc-700">
-                      {tag.trim()}
-                    </span>
-                  ))}
+                  {product.weight && <p className="text-zinc-700">Weight: {product.weight} lbs</p>}
                 </div>
               </div>
             )}
@@ -208,7 +210,7 @@ export default async function PublicProductDetailPage({ params }: { params: Prod
                   )}
                   {product.shippingCost !== undefined && (
                     <p className="text-zinc-700">
-                      Shipping Cost: {product.shippingCost === 0 ? 'Free' : `$${product.shippingCost.toFixed(2)}`}
+                      Shipping Cost: {product.shippingCost === 0 ? "Free" : `$${product.shippingCost.toFixed(2)}`}
                     </p>
                   )}
                 </div>
@@ -230,21 +232,9 @@ export default async function PublicProductDetailPage({ params }: { params: Prod
                 <p className="text-zinc-700 whitespace-pre-line text-sm">{product.returnPolicy}</p>
               </div>
             )}
-
-            {/* Buy Button */}
-            <div className="pt-4">
-              <AddToCartButton 
-                productId={product.id || ""}
-                title={product.title}
-                price={product.price}
-                imageUrl={product.imageUrl}
-                stockQuantity={product.stockQuantity}
-              />
-            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
