@@ -30,6 +30,15 @@ interface UserRole {
   user: User;
 }
 
+interface UserRoleWithRole {
+  id: string;
+  role: {
+    id: string;
+    name: string;
+    description: string | null;
+  };
+}
+
 interface Role {
   id: string;
   name: string;
@@ -281,7 +290,7 @@ export default function RolesPage() {
         const userRes = await fetch(`/api/admin/users/${userId}/roles`);
         if (userRes.ok) {
           const userData = await userRes.json();
-          const currentRoleIds = userData.user.roles?.map((ur: UserRole) => ur.role.id) || [];
+          const currentRoleIds = userData.user.roles?.map((ur: UserRoleWithRole) => ur.role.id) || [];
           const newRoleIds = [...currentRoleIds, assigningUsers.id];
           
           await fetch(`/api/admin/users/${userId}/roles`, {
@@ -297,7 +306,7 @@ export default function RolesPage() {
         const userRes = await fetch(`/api/admin/users/${userId}/roles`);
         if (userRes.ok) {
           const userData = await userRes.json();
-          const currentRoleIds = userData.user.roles?.map((ur: UserRole) => ur.role.id) || [];
+          const currentRoleIds = userData.user.roles?.map((ur: UserRoleWithRole) => ur.role.id) || [];
           const newRoleIds = currentRoleIds.filter((id: string) => id !== assigningUsers.id);
           
           await fetch(`/api/admin/users/${userId}/roles`, {
