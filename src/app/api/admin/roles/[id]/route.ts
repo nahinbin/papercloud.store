@@ -130,12 +130,26 @@ export async function PATCH(
 
       // Add new permissions
       if (permissionKeys.length > 0) {
-        await prisma.rolePermission.createMany({
-          data: permissionKeys.map((key: string) => ({
+        // Fetch all permissions in parallel
+        const permissions = await Promise.all(
+          permissionKeys.map((key: string) =>
+            prisma.permission.findUnique({ where: { key } })
+          )
+        );
+
+        // Create role permissions with valid permission IDs
+        const rolePermissions = permissions
+          .filter((perm) => perm !== null)
+          .map((perm) => ({
             roleId: id,
-            permissionId: (await prisma.permission.findUnique({ where: { key } }))?.id || "",
-          })).filter((item: any) => item.permissionId),
-        });
+            permissionId: perm!.id,
+          }));
+
+        if (rolePermissions.length > 0) {
+          await prisma.rolePermission.createMany({
+            data: rolePermissions,
+          });
+        }
       }
     }
 

@@ -65,23 +65,38 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function SalesChart({ data }: { data: SalesData[] }) {
-  const maxRevenue = Math.max(...data.map(d => d.revenue), 1);
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-32 flex items-center justify-center text-zinc-400 text-sm">
+        No sales data available
+      </div>
+    );
+  }
+
+  const maxRevenue = Math.max(...data.map(d => d.revenue || 0), 1);
+  const totalRevenue = data.reduce((sum, d) => sum + (d.revenue || 0), 0);
   
   return (
     <div className="space-y-3">
-      <div className="flex items-end justify-between h-32 gap-2">
+      <div className="flex items-end justify-between h-32 gap-1.5">
         {data.map((day, index) => {
-          const height = (day.revenue / maxRevenue) * 100;
+          const revenue = day.revenue || 0;
+          const height = maxRevenue > 0 ? Math.max((revenue / maxRevenue) * 100, 2) : 2; // Minimum 2% height for visibility
           return (
-            <div key={index} className="flex-1 flex flex-col items-center gap-1">
-              <div className="w-full flex flex-col justify-end h-full">
+            <div key={index} className="flex-1 flex flex-col items-center gap-1.5">
+              <div className="w-full flex flex-col justify-end h-full relative group">
                 <div
-                  className="w-full bg-gradient-to-t from-black to-zinc-700 rounded-t transition-all duration-500 hover:from-zinc-800 hover:to-zinc-600"
-                  style={{ height: `${height}%` }}
-                  title={`${formatCurrency(day.revenue)} - ${day.orders} orders`}
+                  className="w-full bg-gradient-to-t from-black to-zinc-700 rounded-t transition-all duration-300 hover:from-zinc-800 hover:to-zinc-600 cursor-pointer"
+                  style={{ height: `${height}%`, minHeight: revenue > 0 ? '4px' : '0px' }}
+                  title={`${formatDate(day.date)}: ${formatCurrency(revenue)} - ${day.orders || 0} orders`}
                 />
+                {revenue > 0 && (
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    {formatCurrency(revenue)}
+                  </div>
+                )}
               </div>
-              <span className="text-xs text-zinc-500 mt-1">
+              <span className="text-xs text-zinc-500">
                 {new Date(day.date).toLocaleDateString("en-US", { weekday: "short" })}
               </span>
             </div>
@@ -90,7 +105,7 @@ function SalesChart({ data }: { data: SalesData[] }) {
       </div>
       <div className="flex items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-100">
         <span>Last 7 days</span>
-        <span>Total: {formatCurrency(data.reduce((sum, d) => sum + d.revenue, 0))}</span>
+        <span className="font-medium">Total: {formatCurrency(totalRevenue)}</span>
       </div>
     </div>
   );
@@ -292,11 +307,14 @@ export default function AdminDashboard() {
               {/* Sales Chart */}
               <div className="rounded-2xl border border-zinc-100 bg-white/80 p-6 shadow-sm">
                 <h2 className="text-lg font-semibold text-zinc-900 mb-4">Sales Trend</h2>
-                {stats.salesData && stats.salesData.length > 0 ? (
+                {stats && stats.salesData && Array.isArray(stats.salesData) && stats.salesData.length > 0 ? (
                   <SalesChart data={stats.salesData} />
                 ) : (
-                  <div className="h-32 flex items-center justify-center text-zinc-400">
-                    No sales data available
+                  <div className="h-32 flex items-center justify-center text-zinc-400 text-sm">
+                    <div className="text-center">
+                      <p>No sales data available</p>
+                      <p className="text-xs mt-1 text-zinc-400">Sales will appear here once orders are placed</p>
+                    </div>
                   </div>
                 )}
               </div>
