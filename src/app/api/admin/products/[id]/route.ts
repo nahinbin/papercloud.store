@@ -191,8 +191,6 @@ export async function PATCH(
   } catch (error: any) {
     return createErrorResponse(error?.message || "Failed to update product", 400);
   }
-  
-  return createSuccessResponse({ product });
 }
 
 export async function DELETE(
