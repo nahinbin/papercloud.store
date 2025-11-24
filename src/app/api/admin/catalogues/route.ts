@@ -1,24 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { getUserBySessionToken } from "@/lib/authDb";
+import { requirePermission, createErrorResponse, createSuccessResponse } from "@/lib/adminAuth";
 import { createCatalogue, listCatalogues } from "@/lib/catalogueDb";
-
-async function ensureAdmin() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  const user = await getUserBySessionToken(token);
-
-  if (!user) {
-    return { error: "Unauthorized", status: 401 };
-  }
-
-  const isAdmin = user.isAdmin || user.username === "@admin" || user.username === "admin";
-  if (!isAdmin) {
-    return { error: "Forbidden", status: 403 };
-  }
-
-  return { error: null, status: 200 };
-}
 
 function parseImagePayload(imageData: any, imageMimeType?: string) {
   if (!imageData) {
@@ -43,19 +25,19 @@ function parseImagePayload(imageData: any, imageMimeType?: string) {
 }
 
 export async function GET() {
-  const check = await ensureAdmin();
-  if (check.error) {
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  const auth = await requirePermission("catalogues.view");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const catalogues = await listCatalogues(false);
-  return NextResponse.json({ catalogues });
+  return createSuccessResponse({ catalogues });
 }
 
 export async function POST(request: Request) {
-  const check = await ensureAdmin();
-  if (check.error) {
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  const auth = await requirePermission("catalogues.create");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const body = await request.json().catch(() => null);
@@ -83,6 +65,6 @@ export async function POST(request: Request) {
     productIds,
   });
 
-  return NextResponse.json({ catalogue }, { status: 201 });
+  return createSuccessResponse({ catalogue }, 201);
 }
 

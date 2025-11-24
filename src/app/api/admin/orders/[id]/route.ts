@@ -1,24 +1,14 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { getUserBySessionToken } from "@/lib/authDb";
+import { requirePermission, createErrorResponse, createSuccessResponse } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  const user = await getUserBySessionToken(token);
-  
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  
-  // Check if admin
-  const isAdmin = user.isAdmin || user.username === "@admin" || user.username === "admin";
-  if (!isAdmin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = await requirePermission("orders.edit");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const { id } = await params;
@@ -43,7 +33,7 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json({ order });
+    return createSuccessResponse({ order });
   } catch (error) {
     return NextResponse.json(
       { error: "Order not found" },
@@ -56,18 +46,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  const user = await getUserBySessionToken(token);
-  
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  
-  // Check if admin
-  const isAdmin = user.isAdmin || user.username === "@admin" || user.username === "admin";
-  if (!isAdmin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = await requirePermission("orders.delete");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const { id } = await params;
@@ -103,18 +84,9 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  const user = await getUserBySessionToken(token);
-  
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  
-  // Check if admin
-  const isAdmin = user.isAdmin || user.username === "@admin" || user.username === "admin";
-  if (!isAdmin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = await requirePermission("orders.view");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const { id } = await params;
@@ -134,7 +106,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ order });
+    return createSuccessResponse({ order });
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch order" },

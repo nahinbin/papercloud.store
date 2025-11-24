@@ -1,42 +1,24 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { getUserBySessionToken } from "@/lib/authDb";
+import { requirePermission, createErrorResponse, createSuccessResponse } from "@/lib/adminAuth";
 import { createBanner, listBanners } from "@/lib/bannerDb";
 
-async function checkAdmin() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  const user = await getUserBySessionToken(token);
-  
-  if (!user) {
-    return { error: "Unauthorized", status: 401, user: null };
-  }
-  
-  const isAdmin = user.isAdmin || user.username === "@admin" || user.username === "admin";
-  if (!isAdmin) {
-    return { error: "Forbidden", status: 403, user: null };
-  }
-  
-  return { error: null, status: 200, user };
-}
-
 export async function GET() {
-  const adminCheck = await checkAdmin();
-  if (adminCheck.error) {
-    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+  const auth = await requirePermission("banners.view");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const banners = await listBanners(false); // Get all banners (including inactive) for admin
-  const response = NextResponse.json({ banners });
+  const response = createSuccessResponse({ banners });
   // Cache for 30 seconds, stale-while-revalidate for 60 seconds
   response.headers.set("Cache-Control", "private, s-maxage=30, stale-while-revalidate=60");
   return response;
 }
 
 export async function POST(request: Request) {
-  const adminCheck = await checkAdmin();
-  if (adminCheck.error) {
-    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+  const auth = await requirePermission("banners.create");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const body = await request.json().catch(() => null);
@@ -91,7 +73,7 @@ export async function POST(request: Request) {
     const { revalidateTag } = await import("next/cache");
     revalidateTag("banners", "max");
     
-    return NextResponse.json({ id: banner.id, banner }, { status: 201 });
+    return createSuccessResponse({ id: banner.id, banner }, 201);
   } catch (error: any) {
     return NextResponse.json(
       { error: error?.message || "Failed to create banner. Please ensure the Banner model is set up: run 'npx prisma generate && npx prisma migrate dev'" },

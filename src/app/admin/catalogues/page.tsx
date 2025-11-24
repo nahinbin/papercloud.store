@@ -51,25 +51,31 @@ export default function CataloguePage() {
 
   useEffect(() => {
     fetch("/api/auth/me")
-      .then(async (res) => {
-        if (res.ok) {
-          const data = await res.json();
-          const user = data.user;
+      .then(async (authRes) => {
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          const user = authData.user;
+          const permissions = authData.permissions || [];
           const admin = user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false;
           setIsAdmin(admin);
-          if (!admin) {
-            router.push("/");
+          
+          // Check permissions - now available from auth response
+          const canViewCatalogues = admin || permissions.includes("catalogues.view");
+          
+          if (!canViewCatalogues) {
+            router.push("/admin/unauthorized");
             return;
           }
+          
           await Promise.all([fetchCatalogues(), fetchProducts()]);
         } else {
           setIsAdmin(false);
-          router.push("/");
+          router.push("/admin/unauthorized");
         }
       })
       .catch(() => {
         setIsAdmin(false);
-        router.push("/");
+        router.push("/admin/unauthorized");
       })
       .finally(() => setLoading(false));
   }, [router]);

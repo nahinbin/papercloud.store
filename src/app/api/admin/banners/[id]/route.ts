@@ -1,33 +1,15 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { getUserBySessionToken } from "@/lib/authDb";
+import { requirePermission, createErrorResponse, createSuccessResponse } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
 import { getBannerById } from "@/lib/bannerDb";
-
-async function checkAdmin() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  const user = await getUserBySessionToken(token);
-  
-  if (!user) {
-    return { error: "Unauthorized", status: 401, user: null };
-  }
-  
-  const isAdmin = user.isAdmin || user.username === "@admin" || user.username === "admin";
-  if (!isAdmin) {
-    return { error: "Forbidden", status: 403, user: null };
-  }
-  
-  return { error: null, status: 200, user };
-}
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminCheck = await checkAdmin();
-  if (adminCheck.error) {
-    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+  const auth = await requirePermission("banners.edit");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const { id } = await params;
@@ -122,9 +104,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminCheck = await checkAdmin();
-  if (adminCheck.error) {
-    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+  const auth = await requirePermission("banners.delete");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const { id } = await params;
@@ -137,7 +119,7 @@ export async function DELETE(
 
     if (!existingBanner) {
       // Banner doesn't exist - return success (idempotent delete)
-      return NextResponse.json({ success: true, message: "Banner already deleted" });
+      return createSuccessResponse({ success: true, message: "Banner already deleted" });
     }
 
     await (prisma as any).banner.delete({
@@ -148,7 +130,7 @@ export async function DELETE(
     const { revalidateTag } = await import("next/cache");
     revalidateTag("banners", "max");
 
-    return NextResponse.json({ success: true });
+    return createSuccessResponse({ success: true });
   } catch (error: any) {
     const errorMessage = error?.message || "Failed to delete banner";
     if (errorMessage.includes('Cannot read properties of undefined') || error?.name === 'TypeError') {
@@ -159,7 +141,7 @@ export async function DELETE(
     }
     // Handle Prisma "record not found" error gracefully
     if (error?.code === 'P2025' || errorMessage.includes('Record to delete does not exist')) {
-      return NextResponse.json({ success: true, message: "Banner already deleted" });
+      return createSuccessResponse({ success: true, message: "Banner already deleted" });
     }
     return NextResponse.json({ error: errorMessage }, { status: 400 });
   }

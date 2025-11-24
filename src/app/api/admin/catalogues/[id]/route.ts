@@ -1,24 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { getUserBySessionToken } from "@/lib/authDb";
+import { requirePermission, createErrorResponse, createSuccessResponse } from "@/lib/adminAuth";
 import { deleteCatalogue, getCatalogueById, updateCatalogue } from "@/lib/catalogueDb";
-
-async function ensureAdmin() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  const user = await getUserBySessionToken(token);
-
-  if (!user) {
-    return { error: "Unauthorized", status: 401 };
-  }
-
-  const isAdmin = user.isAdmin || user.username === "@admin" || user.username === "admin";
-  if (!isAdmin) {
-    return { error: "Forbidden", status: 403 };
-  }
-
-  return { error: null, status: 200 };
-}
 
 function parseImagePayload(imageData: any, imageMimeType?: string) {
   if (imageData === null) {
@@ -47,9 +29,9 @@ function parseImagePayload(imageData: any, imageMimeType?: string) {
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
-  const check = await ensureAdmin();
-  if (check.error) {
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  const auth = await requirePermission("catalogues.edit");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const body = await request.json().catch(() => null);
@@ -78,13 +60,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     productIds,
   });
 
-  return NextResponse.json({ catalogue });
+  return createSuccessResponse({ catalogue });
 }
 
 export async function DELETE(_: Request, context: { params: Promise<{ id: string }> }) {
-  const check = await ensureAdmin();
-  if (check.error) {
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  const auth = await requirePermission("catalogues.delete");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const { id } = await context.params;
@@ -94,6 +76,6 @@ export async function DELETE(_: Request, context: { params: Promise<{ id: string
   }
 
   await deleteCatalogue(id);
-  return NextResponse.json({ success: true });
+  return createSuccessResponse({ success: true });
 }
 

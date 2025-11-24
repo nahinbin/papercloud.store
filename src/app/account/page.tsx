@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Gravatar from "@/components/Gravatar";
 
 interface User {
   id: string;
@@ -368,7 +369,23 @@ export default function AccountPage() {
         {/* Profile Tab */}
         {activeTab === "profile" && (
           <div className="max-w-2xl">
-            <h2 className="text-xl font-semibold mb-6">Profile Information</h2>
+            <div className="mb-6 flex items-center gap-4">
+              {user && (
+                <Gravatar
+                  email={user.email}
+                  username={user.username}
+                  name={user.name}
+                  size={64}
+                  className="shrink-0"
+                />
+              )}
+              <div>
+                <h2 className="text-xl font-semibold">Profile Information</h2>
+                <p className="text-sm text-zinc-600 mt-1">
+                  Your profile picture is generated from your email using Gravatar
+                </p>
+              </div>
+            </div>
             <form onSubmit={handleProfileUpdate} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Full Name</label>

@@ -1,32 +1,14 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { getUserBySessionToken } from "@/lib/authDb";
+import { requirePermission, createErrorResponse, createSuccessResponse } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
-
-async function checkAdmin() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  const user = await getUserBySessionToken(token);
-  
-  if (!user) {
-    return { error: "Unauthorized", status: 401, user: null };
-  }
-  
-  const isAdmin = user.isAdmin || user.username === "@admin" || user.username === "admin";
-  if (!isAdmin) {
-    return { error: "Forbidden", status: 403, user: null };
-  }
-  
-  return { error: null, status: 200, user };
-}
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminCheck = await checkAdmin();
-  if (adminCheck.error) {
-    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+  const auth = await requirePermission("users.edit");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const { id } = await params;
@@ -61,7 +43,7 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json({ user });
+    return createSuccessResponse({ user });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || "Failed to update user" }, { status: 400 });
   }
@@ -71,9 +53,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminCheck = await checkAdmin();
-  if (adminCheck.error) {
-    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+  const auth = await requirePermission("users.delete");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const { id } = await params;
@@ -83,7 +65,7 @@ export async function DELETE(
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return createSuccessResponse({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || "Failed to delete user" }, { status: 400 });
   }

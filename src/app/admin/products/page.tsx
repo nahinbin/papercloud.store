@@ -8,22 +8,30 @@ import type { Product } from "@/types/product";
 export default function ProductsPage() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
-      .then(async (r) => {
-        if (r.ok) {
-          const data = await r.json();
-          const user = data.user;
+      .then(async (authRes) => {
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          const user = authData.user;
+          const permissions = authData.permissions || [];
           const admin = user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false;
           setIsAdmin(admin);
-          if (!admin) {
-            router.push("/");
+          
+          // Check permissions - now available from auth response
+          const canViewProducts = admin || permissions.includes("products.view");
+          setHasAccess(canViewProducts);
+          
+          if (!canViewProducts) {
+            router.push("/admin/unauthorized");
             return;
           }
+          
           // Fetch products
           fetch("/api/products")
             .then(async (res) => {
@@ -38,12 +46,14 @@ export default function ProductsPage() {
             .finally(() => setLoading(false));
         } else {
           setIsAdmin(false);
-          router.push("/");
+          setHasAccess(false);
+          router.push("/admin/unauthorized");
         }
       })
       .catch(() => {
         setIsAdmin(false);
-        router.push("/");
+        setHasAccess(false);
+        router.push("/admin/unauthorized");
       });
   }, [router]);
 
@@ -63,7 +73,7 @@ export default function ProductsPage() {
   };
 
 
-  if (loading || isAdmin === null) {
+  if (loading || isAdmin === null || hasAccess === null) {
     return (
       <div className="min-h-screen w-full bg-white flex items-center justify-center">
         <p className="text-zinc-600">Loading...</p>
@@ -71,7 +81,7 @@ export default function ProductsPage() {
     );
   }
 
-  if (!isAdmin) {
+  if (!hasAccess) {
     return null;
   }
 

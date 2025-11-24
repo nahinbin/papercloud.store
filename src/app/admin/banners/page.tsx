@@ -41,28 +41,34 @@ export default function BannersPage() {
   const [desktopImagePreview, setDesktopImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch auth first, then banners if authorized
+    // Fetch auth (which now includes permissions), then banners if authorized
     fetch("/api/auth/me")
-      .then(async (r) => {
-        if (r.ok) {
-          const data = await r.json();
-          const user = data.user;
+      .then(async (authRes) => {
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          const user = authData.user;
+          const permissions = authData.permissions || [];
           const admin = user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false;
           setIsAdmin(admin);
-          if (!admin) {
-            router.push("/");
+          
+          // Check permissions - now available from auth response
+          const canViewBanners = admin || permissions.includes("banners.view");
+          
+          if (!canViewBanners) {
+            router.push("/admin/unauthorized");
             return;
           }
+          
           // Fetch banners after auth check passes
           fetchBanners();
         } else {
           setIsAdmin(false);
-          router.push("/");
+          router.push("/admin/unauthorized");
         }
       })
       .catch(() => {
         setIsAdmin(false);
-        router.push("/");
+        router.push("/admin/unauthorized");
       });
   }, [router]);
 

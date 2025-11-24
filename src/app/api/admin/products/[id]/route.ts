@@ -1,33 +1,15 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { getUserBySessionToken } from "@/lib/authDb";
+import { requirePermission, createErrorResponse, createSuccessResponse } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
 import { getProductById } from "@/lib/productDb";
-
-async function checkAdmin() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
-  const user = await getUserBySessionToken(token);
-  
-  if (!user) {
-    return { error: "Unauthorized", status: 401, user: null };
-  }
-  
-  const isAdmin = user.isAdmin || user.username === "@admin" || user.username === "admin";
-  if (!isAdmin) {
-    return { error: "Forbidden", status: 403, user: null };
-  }
-  
-  return { error: null, status: 200, user };
-}
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminCheck = await checkAdmin();
-  if (adminCheck.error) {
-    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+  const auth = await requirePermission("products.edit");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const { id } = await params;
@@ -207,17 +189,19 @@ export async function PATCH(
       },
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error?.message || "Failed to update product" }, { status: 400 });
+    return createErrorResponse(error?.message || "Failed to update product", 400);
   }
+  
+  return createSuccessResponse({ product });
 }
 
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminCheck = await checkAdmin();
-  if (adminCheck.error) {
-    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+  const auth = await requirePermission("products.delete");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
   }
 
   const { id } = await params;
@@ -227,9 +211,9 @@ export async function DELETE(
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return createSuccessResponse({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error?.message || "Failed to delete product" }, { status: 400 });
+    return createErrorResponse(error?.message || "Failed to delete product", 400);
   }
 }
 

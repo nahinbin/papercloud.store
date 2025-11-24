@@ -49,28 +49,34 @@ export default function OrdersPage() {
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch auth first, then orders if authorized
+    // Fetch auth (which now includes permissions), then orders if authorized
     fetch("/api/auth/me")
-      .then(async (r) => {
-        if (r.ok) {
-          const data = await r.json();
-          const user = data.user;
+      .then(async (authRes) => {
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          const user = authData.user;
+          const permissions = authData.permissions || [];
           const admin = user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false;
           setIsAdmin(admin);
-          if (!admin) {
-            router.push("/");
+          
+          // Check permissions - now available from auth response
+          const canViewOrders = admin || permissions.includes("orders.view");
+          
+          if (!canViewOrders) {
+            router.push("/admin/unauthorized");
             return;
           }
+          
           // Fetch orders after auth check passes
           fetchOrders();
         } else {
           setIsAdmin(false);
-          router.push("/");
+          router.push("/admin/unauthorized");
         }
       })
       .catch(() => {
         setIsAdmin(false);
-        router.push("/");
+        router.push("/admin/unauthorized");
       });
   }, [router]);
 
