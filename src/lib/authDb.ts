@@ -116,6 +116,70 @@ export async function deleteSession(token: string | undefined | null): Promise<v
   });
 }
 
+/**
+ * Generate username from name: "MAX VERSTAPPEN" -> "max_verstappen"
+ * If username exists, append underscore and random numbers: "max_verstappen_12345"
+ */
+function generateUsernameFromName(name: string | undefined): string {
+  if (!name) {
+    // Fallback to random username if no name
+    return `user_${crypto.randomBytes(4).toString('hex')}`;
+  }
+
+  // Convert to lowercase, replace spaces with underscores, remove invalid characters
+  let baseUsername = name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '_') // Replace spaces with underscores
+    .replace(/[^a-z0-9_]/g, '') // Remove invalid characters
+    .replace(/_+/g, '_') // Replace multiple underscores with single
+    .replace(/^_+|_+$/g, ''); // Remove leading/trailing underscores
+
+  // If empty after processing, use fallback
+  if (!baseUsername) {
+    return `user_${crypto.randomBytes(4).toString('hex')}`;
+  }
+
+  return baseUsername;
+}
+
+/**
+ * Generate a unique username, appending underscore and random numbers if needed
+ */
+async function generateUniqueUsername(baseUsername: string): Promise<string> {
+  let username = baseUsername;
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  // Check if base username is available
+  const existing = await prisma.user.findUnique({
+    where: { username },
+  });
+
+  if (!existing) {
+    return username;
+  }
+
+  // If exists, append underscore and random numbers
+  while (attempts < maxAttempts) {
+    const randomSuffix = crypto.randomInt(1000, 99999); // 4-5 digit random number
+    username = `${baseUsername}_${randomSuffix}`;
+    
+    const check = await prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (!check) {
+      return username;
+    }
+
+    attempts++;
+  }
+
+  // Last resort: use timestamp + random
+  return `${baseUsername}_${Date.now().toString().slice(-6)}${crypto.randomInt(100, 999)}`;
+}
+
 export async function createOrUpdateGoogleUser(input: {
   googleId: string;
   email: string;
@@ -128,14 +192,13 @@ export async function createOrUpdateGoogleUser(input: {
   });
 
   if (user) {
-    // Update existing user
+    // Update existing user (keep existing username, update name/email if needed)
     user = await prisma.user.update({
       where: { id: user.id },
       data: {
         email: input.email,
         name: input.name || user.name,
-        // Update username if it's auto-generated and user has email
-        username: user.username || input.email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "_"),
+        // Keep existing username, don't regenerate
       },
     });
   } else {
@@ -155,16 +218,9 @@ export async function createOrUpdateGoogleUser(input: {
       });
     } else {
       // Create new user
-      // Generate username from email
-      const baseUsername = input.email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "_");
-      let username = baseUsername;
-      let counter = 1;
-
-      // Ensure username is unique
-      while (await prisma.user.findUnique({ where: { username } })) {
-        username = `${baseUsername}_${counter}`;
-        counter++;
-      }
+      // Generate username from name
+      const baseUsername = generateUsernameFromName(input.name);
+      const username = await generateUniqueUsername(baseUsername);
 
       user = await prisma.user.create({
         data: {

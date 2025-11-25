@@ -33,6 +33,12 @@ export const PERMISSIONS = {
   "catalogues.edit": { name: "Edit Categories", category: "content" },
   "catalogues.delete": { name: "Delete Categories", category: "content" },
   
+  // Coupons
+  "coupons.view": { name: "View Coupons", category: "products" },
+  "coupons.create": { name: "Create Coupons", category: "products" },
+  "coupons.update": { name: "Update Coupons", category: "products" },
+  "coupons.delete": { name: "Delete Coupons", category: "products" },
+  
   // Roles & Permissions
   "roles.view": { name: "View Roles", category: "admin" },
   "roles.create": { name: "Create Roles", category: "admin" },
