@@ -67,15 +67,15 @@ export default function SaveProductButton({ productId, className = "" }: SavePro
     <button
       onClick={handleToggleSave}
       disabled={loading}
-      className={`inline-flex items-center justify-center w-10 h-10 rounded-full transition-all hover:scale-110 active:scale-95 ${
+      className={`inline-flex items-center justify-center w-12 h-12 rounded-lg border transition-all ${
         isSaved
-          ? "text-red-500 hover:text-red-600"
-          : "text-zinc-400 hover:text-zinc-600"
+          ? "border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300"
+          : "border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-50 hover:border-zinc-400"
       } disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       title={isSaved ? "Remove from saved" : "Save product"}
     >
       {isSaved ? (
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
           <path
             fillRule="evenodd"
             d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
@@ -83,7 +83,7 @@ export default function SaveProductButton({ productId, className = "" }: SavePro
           />
         </svg>
       ) : (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
           <path
             strokeLinecap="round"
             strokeLinejoin="round"

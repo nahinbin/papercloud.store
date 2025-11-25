@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface OrderItem {
   id: string;
@@ -156,9 +157,7 @@ export default function OrderDetailPage() {
     return (
       <div className="min-h-screen w-full bg-white">
         <div className="mx-auto max-w-4xl px-6 py-12">
-          <Link href="/admin/orders" className="text-zinc-600 hover:text-black underline mb-4 inline-block">
-            ← Back to Orders
-          </Link>
+          <Breadcrumbs className="mb-4" />
           <div className="p-4 bg-red-50 border border-red-200 rounded text-red-600">
             {error || "Order not found"}
           </div>
@@ -187,9 +186,7 @@ export default function OrderDetailPage() {
 
       <div className="mx-auto max-w-4xl px-6 py-12">
         <div className="mb-8">
-          <Link href="/admin/orders" className="text-zinc-600 hover:text-black underline mb-4 inline-block">
-            ← Back to Orders
-          </Link>
+          <Breadcrumbs className="mb-4" />
           <h1 className="text-3xl font-semibold">Order Details</h1>
           <p className="mt-2 text-zinc-600">Order ID: {order.id}</p>
         </div>

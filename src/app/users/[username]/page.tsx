@@ -5,6 +5,7 @@ import { getUserBySessionToken } from "@/lib/authDb";
 import Link from "next/link";
 import Image from "next/image";
 import { getUserAvatarUrl } from "@/lib/gravatar-server";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface UserProfilePageProps {
   params: Promise<{ username: string }>;
@@ -49,15 +50,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-zinc-50 via-white to-white">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-12">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-zinc-600 hover:text-black mb-8 transition-colors"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Back to Store
-        </Link>
+        <Breadcrumbs className="mb-8" />
 
         <div className="rounded-2xl border border-zinc-100 bg-white/80 p-8 shadow-sm">
           {/* Profile Header */}

@@ -24,7 +24,6 @@ export default function NewProductPage() {
   const [newColor, setNewColor] = useState("");
   const [sizeVariants, setSizeVariants] = useState<string[]>([]);
   const [newSize, setNewSize] = useState("");
-  const [condition, setCondition] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -160,7 +159,6 @@ export default function NewProductPage() {
           stockQuantity: stockQuantity ? Number(stockQuantity) : undefined,
           color: colorVariantsJson,
           tags: sizeVariantsJson,
-          condition: condition || undefined,
           specifications: imagesJson, // Store all images as JSON in specifications
           catalogueIds: selectedCatalogues, // Pass catalogue IDs
         }),
@@ -513,22 +511,6 @@ export default function NewProductPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Condition
-                </label>
-                <select
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition"
-                  value={condition}
-                  onChange={(e) => setCondition(e.target.value)}
-                >
-                  <option value="">Select condition</option>
-                  <option value="New">New</option>
-                  <option value="Like New">Like New</option>
-                  <option value="Used">Used</option>
-                  <option value="Refurbished">Refurbished</option>
-                </select>
-              </div>
             </div>
 
             {/* Error and Success Messages */}

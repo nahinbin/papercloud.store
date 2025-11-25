@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import Image from "next/image";
 import { getProductById } from "@/lib/productDb";
 import { getUserBySessionToken } from "@/lib/authDb";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
@@ -36,13 +37,8 @@ export default async function ProductDetailPage({
   if (!product) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
+        <Breadcrumbs className="mb-4" />
         <p className="text-red-600">Product not found</p>
-        <a
-          href="/admin/products/new"
-          className="mt-4 inline-block rounded border px-4 py-2"
-        >
-          Back to New Product
-        </a>
       </div>
     );
   }

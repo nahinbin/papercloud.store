@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface OrderItem {
   id: string;
@@ -236,9 +237,7 @@ export default function OrdersPage() {
 
       <div className="mx-auto max-w-7xl px-6 py-12">
         <div className="mb-8">
-          <Link href="/admin" className="text-zinc-600 hover:text-black underline mb-4 inline-block">
-            ← Back to Dashboard
-          </Link>
+          <Breadcrumbs className="mb-4" />
           <h1 className="text-3xl font-semibold">Order Management</h1>
           <p className="mt-2 text-zinc-600">View and manage all customer orders</p>
         </div>

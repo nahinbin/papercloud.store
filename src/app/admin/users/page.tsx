@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Gravatar from "@/components/Gravatar";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface UserRole {
   id: string;
@@ -140,9 +141,7 @@ export default function UsersPage() {
     <div className="min-h-screen w-full bg-white">
       <div className="mx-auto max-w-6xl px-6 py-12">
         <div className="mb-8">
-          <Link href="/admin" className="text-zinc-600 hover:text-black underline mb-4 inline-block">
-            ← Back to Dashboard
-          </Link>
+          <Breadcrumbs className="mb-4" />
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-semibold">User Management</h1>

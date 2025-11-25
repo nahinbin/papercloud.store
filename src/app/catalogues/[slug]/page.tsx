@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { getCatalogueWithProducts } from "@/lib/catalogueDb";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export const revalidate = 300; // Revalidate every 5 minutes (data is cached in DB layer)
 
@@ -22,9 +23,7 @@ export default async function CataloguePage({
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 via-white to-white text-zinc-900">
       <div className="mx-auto max-w-5xl px-4 py-10">
-        <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900">
-          ← Back to store
-        </Link>
+        <Breadcrumbs className="mb-4" />
 
         <div className="mt-6 grid gap-8 md:grid-cols-[2fr,1fr]">
           <div>

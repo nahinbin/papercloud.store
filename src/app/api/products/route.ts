@@ -73,7 +73,6 @@ export async function POST(request: Request) {
     dimensionsDepth: body.dimensionsDepth !== undefined ? Number(body.dimensionsDepth) : undefined,
     color: body.color || undefined,
     material: body.material || undefined,
-    condition: body.condition || undefined,
     tags: body.tags || undefined,
     shippingCost: body.shippingCost !== undefined ? Number(body.shippingCost) : undefined,
     estimatedShippingDays: body.estimatedShippingDays !== undefined ? Number(body.estimatedShippingDays) : undefined,

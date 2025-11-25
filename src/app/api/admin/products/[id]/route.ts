@@ -93,7 +93,6 @@ export async function PATCH(
     if ('dimensionsDepth' in body) updateData.dimensionsDepth = body.dimensionsDepth !== null && body.dimensionsDepth !== "" ? Number(body.dimensionsDepth) : null;
     if ('color' in body) updateData.color = body.color || null;
     if ('material' in body) updateData.material = body.material || null;
-    if ('condition' in body) updateData.condition = body.condition || null;
     if ('tags' in body) updateData.tags = body.tags || null;
     if ('shippingCost' in body) updateData.shippingCost = body.shippingCost !== null && body.shippingCost !== "" ? Number(body.shippingCost) : null;
     if ('estimatedShippingDays' in body) updateData.estimatedShippingDays = body.estimatedShippingDays !== null && body.estimatedShippingDays !== "" ? Number(body.estimatedShippingDays) : null;

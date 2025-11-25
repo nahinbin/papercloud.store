@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface Catalogue {
   id: string;
@@ -244,9 +245,7 @@ export default function CataloguePage() {
       <div className="mx-auto max-w-6xl px-6 py-12">
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <Link href="/admin" className="text-zinc-600 hover:text-black underline block mb-3 md:mb-2">
-              ← Back to Dashboard
-            </Link>
+            <Breadcrumbs className="mb-3 md:mb-2" />
             <h1 className="text-3xl font-semibold">Category Tiles</h1>
             <p className="mt-2 text-zinc-600">Curate homepage tiles, assign products, or generate internal category pages.</p>
           </div>

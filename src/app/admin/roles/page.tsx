@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LoadingPageShell, Skeleton } from "@/components/LoadingSkeletons";
 import Gravatar from "@/components/Gravatar";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface Permission {
   key: string;
@@ -353,12 +354,7 @@ export default function RolesPage() {
             <p className="mt-2 text-zinc-600">Create and manage custom roles with specific permissions</p>
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/admin"
-              className="px-4 py-2 rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors"
-            >
-              ← Back to Dashboard
-            </Link>
+            <Breadcrumbs />
             <button
               onClick={() => {
                 setShowCreateModal(true);

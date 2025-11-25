@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface ImagePreview {
   file?: File;
@@ -63,7 +64,6 @@ export default function EditProductPage() {
         setBrand(product.brand || "");
         setSku(product.sku || "");
         setStockQuantity(product.stockQuantity?.toString() || "");
-        setCondition(product.condition || "");
 
         // Parse color variants (stored as JSON in color field)
         if (product.color) {
@@ -325,7 +325,6 @@ export default function EditProductPage() {
         stockQuantity: stockQuantity ? Number(stockQuantity) : null,
         color: colorVariantsJson || null,
         tags: sizeVariantsJson || null,
-        condition: condition || null,
         specifications: imagesJson || null, // Store all images as JSON in specifications
         catalogueIds: selectedCatalogues, // Pass catalogue IDs
       };
@@ -367,9 +366,7 @@ export default function EditProductPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="mx-auto max-w-4xl px-4">
         <div className="mb-8">
-          <Link href="/admin/products" className="text-gray-600 hover:text-black mb-4 inline-block">
-            ← Back to Products
-          </Link>
+          <Breadcrumbs className="mb-4" />
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Edit Product</h1>
           <p className="text-gray-600">Update product details</p>
         </div>
@@ -676,20 +673,6 @@ export default function EditProductPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Condition</label>
-                <select
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition"
-                  value={condition}
-                  onChange={(e) => setCondition(e.target.value)}
-                >
-                  <option value="">Select condition</option>
-                  <option value="New">New</option>
-                  <option value="Like New">Like New</option>
-                  <option value="Used">Used</option>
-                  <option value="Refurbished">Refurbished</option>
-                </select>
-              </div>
             </div>
 
             {/* Error and Success Messages */}

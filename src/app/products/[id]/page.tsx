@@ -7,6 +7,8 @@ import ProductImageGallery from "@/components/ProductImageGallery";
 import ProductVariants from "@/components/ProductVariants";
 import ProductPageClient from "@/components/ProductPageClient";
 import { siteConfig } from "@/lib/siteConfig";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import ShareButton from "@/components/ShareButton";
 
 export const revalidate = 300; // Revalidate every 5 minutes (product data is cached in getProductById)
 
@@ -26,7 +28,11 @@ export async function generateMetadata({ params }: { params: ProductPageParams }
   }
 
   const canonical = new URL(`/products/${id}`, siteConfig.url).toString();
-  const ogImage = new URL(product.imageUrl ?? siteConfig.ogImage, siteConfig.url).toString();
+  // Ensure image URL is absolute for better social media previews
+  const imageUrl = product.imageUrl 
+    ? (product.imageUrl.startsWith('http') ? product.imageUrl : new URL(product.imageUrl, siteConfig.url).toString())
+    : new URL(siteConfig.ogImage, siteConfig.url).toString();
+  
   const description = product.description?.slice(0, 160) ?? siteConfig.description;
 
   return {
@@ -37,10 +43,13 @@ export async function generateMetadata({ params }: { params: ProductPageParams }
       title: product.title,
       description,
       url: canonical,
-      type: "website",
+      type: "website", // Using "website" for better compatibility with WhatsApp/Instagram
+      siteName: siteConfig.name,
       images: [
         {
-          url: ogImage,
+          url: imageUrl,
+          width: 1200,
+          height: 630,
           alt: product.title,
         },
       ],
@@ -49,7 +58,13 @@ export async function generateMetadata({ params }: { params: ProductPageParams }
       card: "summary_large_image",
       title: product.title,
       description,
-      images: [ogImage],
+      images: [imageUrl],
+    },
+    // Additional meta tags for better WhatsApp/Instagram previews
+    other: {
+      "og:image:width": "1200",
+      "og:image:height": "630",
+      "og:image:type": "image/jpeg",
     },
   };
 }
@@ -114,9 +129,7 @@ export default async function PublicProductDetailPage({ params }: { params: Prod
   return (
     <div className="min-h-screen w-full bg-white">
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <Link href="/" className="inline-block mb-6 text-zinc-600 hover:text-black">
-          ← Back to Store
-        </Link>
+        <Breadcrumbs className="mb-6" />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Product Image Gallery */}
@@ -126,8 +139,18 @@ export default async function PublicProductDetailPage({ params }: { params: Prod
           <div className="space-y-6">
             <div>
               {product.brand && <p className="text-sm text-zinc-600 mb-2">{product.brand}</p>}
-              <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
-              {product.sku && <p className="text-sm text-zinc-500 mb-4">SKU: {product.sku}</p>}
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-2">
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
+                  {product.sku && <p className="text-sm text-zinc-500 mb-4">SKU: {product.sku}</p>}
+                </div>
+                <ShareButton
+                  url={`${siteConfig.url}/products/${product.id}`}
+                  title={product.title}
+                  description={product.description?.slice(0, 100)}
+                  className="flex-shrink-0 w-full sm:w-auto"
+                />
+              </div>
             </div>
 
             {/* Price Section */}
@@ -162,20 +185,12 @@ export default async function PublicProductDetailPage({ params }: { params: Prod
             />
 
             {/* Quick Info */}
-            <div className="grid grid-cols-2 gap-4">
-              {product.condition && (
-                <div>
-                  <p className="text-xs text-zinc-500 mb-1">Condition</p>
-                  <p className="font-medium">{product.condition}</p>
-                </div>
-              )}
-              {product.category && (
-                <div>
-                  <p className="text-xs text-zinc-500 mb-1">Category</p>
-                  <p className="font-medium">{product.category}</p>
-                </div>
-              )}
-            </div>
+            {product.category && (
+              <div>
+                <p className="text-xs text-zinc-500 mb-1">Category</p>
+                <p className="font-medium">{product.category}</p>
+              </div>
+            )}
 
             {/* Description */}
             {product.description && (
