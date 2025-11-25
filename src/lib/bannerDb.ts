@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { unstable_cache } from "next/cache";
 
 export interface Banner {
   id: string;
@@ -89,7 +90,7 @@ export async function createBanner(input: Omit<Banner, "id" | "createdAt" | "upd
   }
 }
 
-export async function listBanners(activeOnly: boolean = false): Promise<Banner[]> {
+async function _listBannersUncached(activeOnly: boolean = false): Promise<Banner[]> {
   try {
     const banners = await (prisma as any).banner.findMany({
       where: activeOnly ? { isActive: true } : undefined,
@@ -141,7 +142,22 @@ export async function listBanners(activeOnly: boolean = false): Promise<Banner[]
   }
 }
 
+export async function listBanners(activeOnly: boolean = false): Promise<Banner[]> {
+  // Cache banners for 60 seconds - banners don't change frequently
+  // Use different cache keys for active vs all banners
+  const cacheKey = activeOnly ? "active-banners" : "all-banners";
+  return unstable_cache(
+    async () => _listBannersUncached(activeOnly),
+    [cacheKey],
+    {
+      revalidate: 60, // Revalidate every 60 seconds
+      tags: ["banners"], // Tag for cache invalidation
+    }
+  )();
+}
+
 export async function listActiveBannerSummaries(): Promise<BannerSummary[]> {
+  // This is already cached via listBanners, but we can add an additional cache layer
   const banners = await listBanners(true);
   return banners.map((banner) => ({
     id: banner.id,

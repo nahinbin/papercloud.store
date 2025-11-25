@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { useUser } from "./UserContext";
 
 export interface CartItem {
   productId: string;
@@ -25,20 +26,33 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-
-  // Load cart on mount
-  useEffect(() => {
-    const loadCart = async () => {
+  const { isAuthenticated, isLoading: userLoading } = useUser();
+  const [items, setItems] = useState<CartItem[]>(() => {
+    // Load from localStorage immediately for instant UI
+    if (typeof window !== "undefined") {
       try {
-        // Check if user is logged in
-        const authRes = await fetch("/api/auth/me");
-        const isAuth = authRes.ok;
-        setIsLoggedIn(isAuth);
+        const saved = localStorage.getItem("cart");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to parse cart from localStorage", e);
+      }
+    }
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-        if (isAuth) {
+  // Load cart from server when user is authenticated
+  useEffect(() => {
+    if (userLoading) return; // Wait for user context to finish loading
+
+    const loadCart = async () => {
+      if (isAuthenticated) {
+        try {
           // Load from server
           const res = await fetch("/api/cart");
           if (res.ok) {
@@ -49,41 +63,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
               localStorage.setItem("cart", JSON.stringify(data.items));
             }
           }
-        } else {
-          // Load from localStorage for guest users
-          const saved = localStorage.getItem("cart");
-          if (saved) {
-            try {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed)) {
-                setItems(parsed);
-              }
-            } catch (e) {
-              console.error("Failed to parse cart from localStorage", e);
-            }
-          }
+        } catch (error) {
+          console.error("Failed to load cart from server", error);
+          // Keep localStorage items as fallback
         }
-      } catch (error) {
-        console.error("Failed to load cart", error);
-        // Fallback to localStorage
-        const saved = localStorage.getItem("cart");
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed)) {
-              setItems(parsed);
-            }
-          } catch (e) {
-            console.error("Failed to parse cart from localStorage", e);
-          }
-        }
-      } finally {
-        setIsLoading(false);
       }
+      setIsLoading(false);
     };
 
     loadCart();
-  }, []);
+  }, [isAuthenticated, userLoading]);
 
   // Save to localStorage whenever items change (for guest users)
   useEffect(() => {
@@ -94,7 +83,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Sync to server when logged in (debounced)
   const syncToServer = useCallback(async (cartItems: CartItem[]) => {
-    if (!isLoggedIn || isLoading) return;
+    if (!isAuthenticated || isLoading) return;
 
     try {
       const res = await fetch("/api/cart", {
@@ -127,18 +116,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Failed to sync cart to server", error);
     }
-  }, [isLoggedIn, isLoading]);
+  }, [isAuthenticated, isLoading]);
 
   // Debounced sync to server
   useEffect(() => {
-    if (isLoading || !isLoggedIn) return;
+    if (isLoading || !isAuthenticated) return;
 
     const timeoutId = setTimeout(() => {
       syncToServer(items);
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [items, isLoggedIn, isLoading, syncToServer]);
+  }, [items, isAuthenticated, isLoading, syncToServer]);
 
   const addItem = useCallback((item: Omit<CartItem, "quantity">) => {
     // Prevent adding out of stock items
@@ -210,14 +199,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(async () => {
     setItems([]);
-    if (isLoggedIn) {
+    if (isAuthenticated) {
       try {
         await fetch("/api/cart", { method: "DELETE" });
       } catch (error) {
         console.error("Failed to clear cart on server", error);
       }
     }
-  }, [isLoggedIn]);
+  }, [isAuthenticated]);
 
   const getTotal = useCallback(() => {
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0);

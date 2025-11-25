@@ -6,8 +6,9 @@ import CataloguesSkeleton from "./_components/CataloguesSkeleton";
 import ProductsSection from "./_components/ProductsSection";
 import ProductsSkeleton from "./_components/ProductsSkeleton";
 
-export const revalidate = 0; // Always serve the freshest homepage content
-export const dynamic = "force-dynamic";
+// Use ISR (Incremental Static Regeneration) for better performance
+// Revalidate every 60 seconds - banners and products don't change that frequently
+export const revalidate = 60;
 
 export default function Home() {
   return (

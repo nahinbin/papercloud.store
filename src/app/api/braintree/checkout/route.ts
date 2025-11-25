@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import * as braintree from "braintree";
 import { prisma } from "@/lib/prisma";
 import { getUserBySessionToken } from "@/lib/authDb";
+import { applyCoupon } from "@/lib/couponDb";
 
 function getGateway() {
   return new braintree.BraintreeGateway({
@@ -19,7 +20,7 @@ function getGateway() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { paymentMethodNonce, amount, items, shippingInfo } = body;
+    const { paymentMethodNonce, amount, items, shippingInfo, couponId, couponCode, discountAmount } = body;
 
     if (!items || !shippingInfo) {
       return NextResponse.json(
@@ -105,6 +106,16 @@ export async function POST(request: Request) {
     const token = cookieStore.get("session")?.value;
     const user = token ? await getUserBySessionToken(token) : null;
 
+    // Apply coupon if provided
+    if (couponId) {
+      try {
+        await applyCoupon(couponId);
+      } catch (err) {
+        console.error("Failed to apply coupon:", err);
+        // Continue with order even if coupon application fails
+      }
+    }
+
     // Create order in database
     const order = await prisma.order.create({
       data: {
@@ -119,6 +130,9 @@ export async function POST(request: Request) {
         totalAmount: orderAmount,
         status: isFreeOrder ? "paid" : "paid", // Free orders are also marked as paid
         braintreeTxId: transactionId,
+        couponId: couponId || null,
+        couponCode: couponCode || null,
+        discountAmount: discountAmount ? parseFloat(discountAmount.toString()) : null,
         items: {
           create: items.map((item: any) => ({
             productId: item.productId,

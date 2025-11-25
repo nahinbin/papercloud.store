@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Gravatar from "@/components/Gravatar";
+import { useUser } from "@/contexts/UserContext";
 
 interface User {
   id: string;
@@ -60,6 +61,7 @@ type Tab = "profile" | "orders" | "addresses" | "saved";
 
 export default function AccountPage() {
   const router = useRouter();
+  const { user: contextUser, isAuthenticated, isLoading: userLoading } = useUser();
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [user, setUser] = useState<User | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -100,9 +102,55 @@ export default function AccountPage() {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
 
+  // Check auth and load full user profile
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (userLoading) return;
+    
+    if (!isAuthenticated || !contextUser) {
+      router.push("/login");
+      return;
+    }
+
+    // Fetch full user profile (includes phone and updatedAt)
+    const loadUserProfile = async () => {
+      try {
+        const res = await fetch("/api/account/profile");
+        if (!res.ok) {
+          router.push("/login");
+          return;
+        }
+        const data = await res.json();
+        const fullUser = data.user;
+        
+        setUser({
+          id: fullUser.id,
+          name: fullUser.name || undefined,
+          username: fullUser.username,
+          email: fullUser.email || undefined,
+          phone: fullUser.phone || undefined,
+          isAdmin: fullUser.isAdmin,
+          createdAt: new Date(fullUser.createdAt).toISOString(),
+          updatedAt: new Date(fullUser.updatedAt).toISOString(),
+        });
+        
+        setProfileForm({
+          name: fullUser.name || "",
+          username: fullUser.username || "",
+          email: fullUser.email || "",
+          phone: fullUser.phone || "",
+          password: "",
+          currentPassword: "",
+        });
+      } catch (error) {
+        console.error("Failed to load user profile:", error);
+        router.push("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserProfile();
+  }, [contextUser, isAuthenticated, userLoading, router]);
 
   useEffect(() => {
     if (user) {
@@ -110,58 +158,45 @@ export default function AccountPage() {
     }
   }, [user, activeTab]);
 
-  const checkAuth = async () => {
-    try {
-      const res = await fetch("/api/auth/me");
-      if (!res.ok) {
-        router.push("/login");
-        return;
-      }
-      const data = await res.json();
-      setUser(data.user);
-      setProfileForm({
-        name: data.user.name || "",
-        username: data.user.username || "",
-        email: data.user.email || "",
-        phone: data.user.phone || "",
-        password: "",
-        currentPassword: "",
-      });
-    } catch (error) {
-      router.push("/login");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadData = async () => {
-    // Always load orders for profile tab stats
-    if (activeTab === "profile" && orders.length === 0) {
-      try {
-        const res = await fetch("/api/account/orders");
-        if (res.ok) {
-          const data = await res.json();
-          setOrders(data.orders || []);
+    if (activeTab === "profile") {
+      // Load orders and saved products in parallel for profile tab stats
+      if (orders.length === 0 || savedProducts.length === 0) {
+        const promises: Promise<void>[] = [];
+        
+        if (orders.length === 0) {
+          promises.push(
+            fetch("/api/account/orders")
+              .then(async (res) => {
+                if (res.ok) {
+                  const data = await res.json();
+                  setOrders(data.orders || []);
+                }
+              })
+              .catch((error) => {
+                console.error("Failed to load orders:", error);
+              })
+          );
         }
-      } catch (error) {
-        console.error("Failed to load orders:", error);
-      }
-    }
-    
-    // Always load saved products for profile tab stats
-    if (activeTab === "profile" && savedProducts.length === 0) {
-      try {
-        const res = await fetch("/api/account/saved-products");
-        if (res.ok) {
-          const data = await res.json();
-          setSavedProducts(data.products || []);
+        
+        if (savedProducts.length === 0) {
+          promises.push(
+            fetch("/api/account/saved-products")
+              .then(async (res) => {
+                if (res.ok) {
+                  const data = await res.json();
+                  setSavedProducts(data.products || []);
+                }
+              })
+              .catch((error) => {
+                console.error("Failed to load saved products:", error);
+              })
+          );
         }
-      } catch (error) {
-        console.error("Failed to load saved products:", error);
+        
+        await Promise.all(promises);
       }
-    }
-
-    if (activeTab === "addresses") {
+    } else if (activeTab === "addresses") {
       setLoadingAddresses(true);
       try {
         const res = await fetch("/api/account/addresses");

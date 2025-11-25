@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -11,6 +11,7 @@ const isValidUsername = (username: string): boolean => {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -18,6 +19,14 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+
+  // Check for OAuth errors in URL
+  useEffect(() => {
+    const oauthError = searchParams.get("error");
+    if (oauthError) {
+      setError(decodeURIComponent(oauthError));
+    }
+  }, [searchParams]);
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -114,17 +123,17 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-50 via-white to-zinc-100 px-4 py-12">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="mb-8 text-center">
-          <Link href="/" className="inline-block">
+        <div className="mb-10 text-center">
+          <Link href="/" className="inline-block transition-transform hover:scale-105">
             <Image 
               src="/nav.png" 
               alt="PaperCloud" 
               width={200} 
               height={60} 
-              className="h-16 w-auto mx-auto" 
+              className="h-16 w-auto mx-auto drop-shadow-sm" 
               priority
               unoptimized
             />
@@ -132,16 +141,54 @@ export default function RegisterPage() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-lg border shadow-sm p-8">
-          <h1 className="mb-6 text-2xl font-semibold text-center">Create Account</h1>
+        <div className="bg-white rounded-2xl shadow-xl border border-zinc-200/50 p-8 md:p-10 backdrop-blur-sm">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-center text-zinc-900 mb-2">Create Account</h1>
+            <p className="text-center text-zinc-500 text-sm">Join PaperCloud and start shopping today</p>
+          </div>
+
+          {/* Google Sign Up Button - Prominent */}
+          <a
+            href="/api/auth/google"
+            className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-zinc-200 px-5 py-3.5 font-medium text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 transition-all shadow-sm hover:shadow-md mb-6 group"
+          >
+            <svg className="w-5 h-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            <span>Sign up with Google</span>
+          </a>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-zinc-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-zinc-400 font-medium">Or create account with email</span>
+            </div>
+          </div>
           
           <form onSubmit={onSubmit} className="space-y-5">
             <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-700">
-                Name <span className="text-zinc-400 font-normal">(optional)</span>
+              <label className="mb-2 block text-sm font-semibold text-zinc-800">
+                Name <span className="text-zinc-400 font-normal text-xs">(optional)</span>
               </label>
               <input 
-                className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all" 
+                className="w-full rounded-xl border border-zinc-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white hover:border-zinc-400" 
                 value={name} 
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter your name"
@@ -149,9 +196,9 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-700">Username</label>
+              <label className="mb-2 block text-sm font-semibold text-zinc-800">Username</label>
               <input 
-                className={`w-full rounded-lg border px-4 py-2.5 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all bg-white hover:border-zinc-400 ${
                   usernameError 
                     ? "border-red-300 focus:ring-red-500" 
                 : usernameStatus === "available"
@@ -164,28 +211,37 @@ export default function RegisterPage() {
                 required
               />
               {usernameError && (
-                <p className="mt-1.5 text-xs text-red-600">{usernameError}</p>
+                <p className="mt-1.5 text-xs text-red-600 font-medium animate-in fade-in">{usernameError}</p>
               )}
           {!usernameError && usernameStatus === "taken" && (
-            <p className="mt-1.5 text-xs text-red-600">Username taken</p>
+            <p className="mt-1.5 text-xs text-red-600 font-medium animate-in fade-in">Username taken</p>
           )}
           {!usernameError && usernameStatus === "checking" && (
-            <p className="mt-1.5 text-xs text-zinc-500">Checking availability...</p>
+            <p className="mt-1.5 text-xs text-zinc-500 flex items-center gap-1.5">
+              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Checking availability...
+            </p>
           )}
           {!usernameError && usernameStatus === "available" && (
-            <p className="mt-1.5 text-xs text-green-600 flex items-center gap-1">
-              <span>✓</span> Username available
+            <p className="mt-1.5 text-xs text-green-600 font-medium flex items-center gap-1.5 animate-in fade-in">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              Username available
             </p>
           )}
           {username.length === 0 && usernameStatus === "idle" && (
-                <p className="mt-1.5 text-xs text-zinc-500">Lowercase letters, numbers, and _ only</p>
+                <p className="mt-1.5 text-xs text-zinc-400">Lowercase letters, numbers, and _ only</p>
               )}
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-700">Password</label>
+              <label className="mb-2 block text-sm font-semibold text-zinc-800">Password</label>
               <input 
-                className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all" 
+                className="w-full rounded-xl border border-zinc-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white hover:border-zinc-400" 
                 type="password" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)}
@@ -195,23 +251,33 @@ export default function RegisterPage() {
             </div>
 
             {error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3">
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="rounded-xl bg-red-50 border-2 border-red-200 px-4 py-3 animate-in fade-in slide-in-from-top-2">
+                <p className="text-sm text-red-700 font-medium">{error}</p>
               </div>
             )}
 
             <button 
-              disabled={loading} 
-              className="w-full rounded-lg bg-black px-4 py-2.5 text-white font-medium hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || usernameStatus === "checking" || usernameStatus === "taken"} 
+              className="w-full rounded-xl bg-black px-4 py-3.5 text-white font-semibold hover:bg-zinc-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
             >
-              {loading ? "Creating account..." : "Create Account"}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Creating account...
+                </span>
+              ) : (
+                "Create Account"
+              )}
             </button>
 
-            <div className="text-center pt-4 border-t border-zinc-200">
+            <div className="text-center pt-6 border-t border-zinc-200">
               <p className="text-sm text-zinc-600">
                 Already have an account?{" "}
-                <Link href="/login" className="font-medium text-black hover:underline">
-                  Sign In
+                <Link href="/login" className="font-semibold text-black hover:text-zinc-700 transition-colors underline underline-offset-2">
+                  Sign in
                 </Link>
               </p>
             </div>

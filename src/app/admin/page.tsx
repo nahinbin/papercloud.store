@@ -338,6 +338,44 @@ export default function AdminDashboard() {
               </div>
               )}
 
+              {/* Coupons */}
+              {isAdmin || permissions.includes("coupons.view") ? (
+              <Link
+                href="/admin/coupons"
+                className="rounded-xl sm:rounded-2xl border border-zinc-100 bg-white/80 p-4 sm:p-6 shadow-sm hover:shadow-md transition-all hover:border-zinc-200"
+              >
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <h2 className="text-lg sm:text-xl font-semibold text-zinc-900">Coupons</h2>
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-xs sm:text-sm text-zinc-600 mb-3 sm:mb-4">Manage discount codes & promotions</p>
+                <div className="flex items-center text-xs sm:text-sm font-medium text-black hover:underline">
+                  Manage Coupons
+                  <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
+              ) : (
+              <div className="rounded-xl sm:rounded-2xl border border-zinc-100 bg-white/40 p-4 sm:p-6 shadow-sm opacity-50 cursor-not-allowed">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <h2 className="text-lg sm:text-xl font-semibold text-zinc-500">Coupons</h2>
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-xs sm:text-sm text-zinc-500 mb-3 sm:mb-4">Manage discount codes & promotions</p>
+                <div className="flex items-center text-xs sm:text-sm font-medium text-zinc-400">
+                  No Access
+                  <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+              </div>
+              )}
+
               {/* Categories */}
               {isAdmin || permissions.includes("catalogues.view") ? (
               <Link

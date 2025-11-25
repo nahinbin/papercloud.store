@@ -116,4 +116,70 @@ export async function deleteSession(token: string | undefined | null): Promise<v
   });
 }
 
+export async function createOrUpdateGoogleUser(input: {
+  googleId: string;
+  email: string;
+  name?: string;
+  picture?: string;
+}): Promise<PublicUser> {
+  // Check if user exists by Google ID
+  let user = await prisma.user.findUnique({
+    where: { googleId: input.googleId },
+  });
+
+  if (user) {
+    // Update existing user
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        email: input.email,
+        name: input.name || user.name,
+        // Update username if it's auto-generated and user has email
+        username: user.username || input.email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "_"),
+      },
+    });
+  } else {
+    // Check if user exists by email (link accounts)
+    const existingByEmail = await prisma.user.findFirst({
+      where: { email: input.email },
+    });
+
+    if (existingByEmail) {
+      // Link Google account to existing user
+      user = await prisma.user.update({
+        where: { id: existingByEmail.id },
+        data: {
+          googleId: input.googleId,
+          name: input.name || existingByEmail.name,
+        },
+      });
+    } else {
+      // Create new user
+      // Generate username from email
+      const baseUsername = input.email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "_");
+      let username = baseUsername;
+      let counter = 1;
+
+      // Ensure username is unique
+      while (await prisma.user.findUnique({ where: { username } })) {
+        username = `${baseUsername}_${counter}`;
+        counter++;
+      }
+
+      user = await prisma.user.create({
+        data: {
+          googleId: input.googleId,
+          email: input.email,
+          name: input.name,
+          username,
+          passwordHash: null, // Google users don't have passwords
+          isAdmin: false,
+        },
+      });
+    }
+  }
+
+  return toPublicUser(user);
+}
+
 

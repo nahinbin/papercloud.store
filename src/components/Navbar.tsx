@@ -2,18 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Skeleton } from "@/components/LoadingSkeletons";
 import { useCart } from "@/contexts/CartContext";
+import { useUser } from "@/contexts/UserContext";
 import Gravatar from "@/components/Gravatar";
 
 export default function Navbar() {
-	const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
-	const [isAdmin, setIsAdmin] = useState<boolean>(false);
-	const [hasAdminAccess, setHasAdminAccess] = useState<boolean>(false);
-	const [username, setUsername] = useState<string | null>(null);
-	const [userEmail, setUserEmail] = useState<string | null>(null);
-	const [userName, setUserName] = useState<string | null>(null);
+	const { user, permissions, isAuthenticated, isLoading: userLoading, refreshUser } = useUser();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [isMounted, setIsMounted] = useState(false);
 	const { getItemCount } = useCart();
@@ -24,41 +20,14 @@ export default function Navbar() {
 		setIsMounted(true);
 	}, []);
 
-	useEffect(() => {
- 		let cancelled = false;
- 		
-		const checkAuth = async () => {
-			try {
-				const r = await fetch("/api/auth/me", {
-					method: "GET",
-					credentials: "include",
-					headers: {
-						"Content-Type": "application/json",
-					},
-				});
-				
-				if (cancelled) return;
-				
-				if (r.ok) {
-					try {
-						const data = await r.json();
-						const user = data.user;
-						const permissions = data.permissions || [];
-						
-						if (!cancelled) {
-							setIsAuthed(true);
-							setUsername(user?.username || null);
-							setUserEmail(user?.email || null);
-							setUserName(user?.name || null);
-							const admin = user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false;
-							setIsAdmin(admin);
-							
-							// Check permissions for admin access - now available immediately
-							if (admin) {
-								setHasAdminAccess(true);
-							} else {
-								// Check if user has any admin-related permissions
-								const hasAnyAdminPermission = permissions.some((p: string) => 
+	// Calculate admin status from user data
+	const isAdmin = useMemo(() => {
+		return user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false;
+	}, [user]);
+
+	const hasAdminAccess = useMemo(() => {
+		if (isAdmin) return true;
+		return permissions.some((p: string) => 
 									p.startsWith("dashboard.") || 
 									p.startsWith("products.") || 
 									p.startsWith("orders.") || 
@@ -67,56 +36,17 @@ export default function Navbar() {
 									p.startsWith("catalogues.") ||
 									p.startsWith("roles.")
 								);
-								setHasAdminAccess(hasAnyAdminPermission);
-							}
-						}
-					} catch (parseError) {
-						if (!cancelled) {
-							setIsAuthed(false);
-							setIsAdmin(false);
-							setHasAdminAccess(false);
-							setUsername(null);
-							setUserEmail(null);
-							setUserName(null);
-						}
-					}
-				} else {
-					if (!cancelled) {
-						setIsAuthed(false);
-						setIsAdmin(false);
-						setHasAdminAccess(false);
-						setUsername(null);
-						setUserEmail(null);
-						setUserName(null);
-					}
-				}
-			} catch (error) {
-				// Silently handle network errors - user might be offline or server unavailable
-				if (!cancelled) {
-					setIsAuthed(false);
-					setIsAdmin(false);
-					setHasAdminAccess(false);
-					setUsername(null);
-					setUserEmail(null);
-					setUserName(null);
-				}
-			}
-		};
-		
-		checkAuth();
-		
- 		return () => { cancelled = true; };
- 	}, []);
+	}, [isAdmin, permissions]);
+
+	const username = user?.username || null;
+	const userEmail = user?.email || null;
+	const userName = user?.name || null;
+	const isAuthed = userLoading ? null : isAuthenticated;
 
 	const handleLogout = async () => {
 		await fetch("/api/auth/logout", { method: "POST" });
-		setIsAuthed(false);
-		setIsAdmin(false);
-		setHasAdminAccess(false);
-		setUsername(null);
-		setUserEmail(null);
-		setUserName(null);
 		setIsMenuOpen(false);
+		await refreshUser();
 		location.reload();
 	};
 

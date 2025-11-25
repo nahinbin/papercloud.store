@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/contexts/CartContext";
+import { UserProvider } from "@/contexts/UserContext";
 import ConditionalNavbar from "@/components/ConditionalNavbar";
 import Footer from "@/components/Footer";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -89,6 +90,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning>
+        <UserProvider>
         <CartProvider>
           <ConditionalNavbar />
           <div suppressHydrationWarning className="flex min-h-screen flex-col">
@@ -98,6 +100,7 @@ export default function RootLayout({
             <Footer />
           </div>
         </CartProvider>
+        </UserProvider>
         <SpeedInsights />
       </body>
     </html>

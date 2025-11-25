@@ -22,9 +22,6 @@ export default function CheckoutPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const scriptLoadedRef = useRef(false);
   const initializedRef = useRef(false);
-  
-  const total = getTotal();
-  const isFreeOrder = total === 0;
 
   const [shippingInfo, setShippingInfo] = useState({
     email: "",
@@ -39,6 +36,41 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showNewAddressForm, setShowNewAddressForm] = useState(true);
   const [saveAddress, setSaveAddress] = useState(false);
+  
+  // Coupon state - MUST be declared before calculations
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    id: string;
+    code: string;
+    name: string;
+    discountAmount: number;
+  } | null>(null);
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+  const [showAvailableCoupons, setShowAvailableCoupons] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+
+  // Calculate totals after state declarations
+  const subtotal = getTotal();
+  const discountAmount = appliedCoupon?.discountAmount || 0;
+  const total = Math.max(0, subtotal - discountAmount);
+  const isFreeOrder = total === 0;
+
+  // Load available coupons
+  useEffect(() => {
+    const fetchAvailableCoupons = async () => {
+      try {
+        const res = await fetch("/api/coupons/available");
+        if (res.ok) {
+          const data = await res.json();
+          setAvailableCoupons(data.coupons || []);
+        }
+      } catch (err) {
+        console.error("Failed to load available coupons:", err);
+      }
+    };
+    fetchAvailableCoupons();
+  }, []);
 
   // Load saved addresses if user is logged in
   useEffect(() => {
@@ -176,114 +208,39 @@ export default function CheckoutPage() {
 
         if (!mounted || !containerRef.current) return;
 
-        // Aggressively clear container
-        const containerEl = containerRef.current;
+        // Get container and ensure it's completely empty RIGHT before initialization
+        let containerEl = containerRef.current;
         
-        // Remove all children
-        while (containerEl.firstChild) {
-          containerEl.removeChild(containerEl.firstChild);
+        if (!containerEl) {
+          throw new Error("Container element not found");
         }
         
-        // Clear all content
+        // Clear container completely
         containerEl.innerHTML = '';
-        containerEl.textContent = '';
         
-        // Remove any attributes that might have content
-        Array.from(containerEl.attributes).forEach(attr => {
-          if (attr.name !== 'id' && attr.name !== 'class' && attr.name !== 'ref') {
-            containerEl.removeAttribute(attr.name);
+        // If container still has content, replace it with a fresh one
+        if (containerEl.children.length > 0) {
+          const parent = containerEl.parentNode;
+          if (parent) {
+            const newContainer = document.createElement('div');
+            newContainer.id = 'braintree-dropin-container';
+            newContainer.className = 'mb-6 min-h-[200px]';
+            newContainer.setAttribute('suppressHydrationWarning', 'true');
+            parent.replaceChild(newContainer, containerEl);
+            containerRef.current = newContainer;
+            containerEl = newContainer;
           }
-        });
-
-        // Wait one more tick
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        if (!mounted || !containerRef.current) return;
-
-        // Get container and ensure it's completely empty RIGHT before initialization
-        const finalContainer = containerRef.current;
-        
-        // Aggressively clear - multiple passes
-        for (let i = 0; i < 3; i++) {
-          // Remove all children
-          while (finalContainer.firstChild) {
-            finalContainer.removeChild(finalContainer.firstChild);
-          }
-          // Clear all content
-          finalContainer.innerHTML = '';
-          finalContainer.textContent = '';
-          // Remove all attributes except id and class
-          const attrsToKeep = ['id', 'class', 'ref'];
-          Array.from(finalContainer.attributes).forEach(attr => {
-            if (!attrsToKeep.includes(attr.name)) {
-              finalContainer.removeAttribute(attr.name);
-            }
-          });
         }
         
         // Wait for DOM to settle
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Final check - if still has children, something is wrong
-        if (finalContainer.children.length > 0) {
-          console.error("Container still has children after clearing:", finalContainer.children.length);
-          // Last resort - replace the container
-          const parent = finalContainer.parentNode;
-          if (parent) {
-            const newContainer = document.createElement('div');
-            newContainer.id = 'braintree-dropin-container';
-            newContainer.className = finalContainer.className;
-            parent.replaceChild(newContainer, finalContainer);
-            containerRef.current = newContainer;
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
-        }
-
-        console.log("Initializing Braintree Drop-in...");
+        if (!mounted || !containerRef.current) return;
+        
+        containerEl = containerRef.current;
         
         // Initialize Braintree with error handling
         try {
-          // Get or create a completely fresh container
-          let containerEl = containerRef.current;
-          
-          if (!containerEl) {
-            throw new Error("Container element not found");
-          }
-          
-          // Create a brand new empty container to replace the old one
-          const parent = containerEl.parentNode;
-          if (parent) {
-            // Remove old container
-            parent.removeChild(containerEl);
-            
-            // Create completely new empty container
-            const newContainer = document.createElement('div');
-            newContainer.id = 'braintree-dropin-container';
-            newContainer.className = 'mb-6 min-h-[200px]';
-            newContainer.setAttribute('suppressHydrationWarning', 'true');
-            
-            // Insert new container
-            parent.appendChild(newContainer);
-            containerRef.current = newContainer;
-            containerEl = newContainer;
-            
-            // Wait for DOM to update
-            await new Promise(resolve => setTimeout(resolve, 50));
-          }
-          
-          // Final verification - container MUST be empty
-          if (containerEl.children.length > 0 || containerEl.textContent?.trim() || containerEl.innerHTML.trim()) {
-            console.error("New container still has content:", {
-              children: containerEl.children.length,
-              textContent: containerEl.textContent,
-              innerHTML: containerEl.innerHTML.substring(0, 100)
-            });
-            setError("Payment container is not ready. Please refresh the page.");
-            setLoading(false);
-            return;
-          }
-          
-          console.log("Container verified empty, initializing Braintree...");
           
           window.braintree.dropin.create(
             {
@@ -299,28 +256,33 @@ export default function CheckoutPage() {
               if (!mounted) return;
               
               if (err) {
-                console.error("Braintree Drop-in error:", err);
-                console.error("Error details:", JSON.stringify(err, null, 2));
-                
-                let errorMsg = "Failed to initialize payment form";
-                
-                // Handle different error types
-                if (err.message) {
-                  errorMsg += ": " + err.message;
-                } else if (typeof err === 'string') {
-                  errorMsg += ": " + err;
-                } else if (err.type) {
-                  errorMsg += ` (${err.type})`;
+                // Handle DropinError more gracefully - this is usually a config issue
+                if (err.name === 'DropinError' || err.type === 'DropinError' || err.message?.includes('All payment options failed')) {
+                  // Don't spam console with this - it's usually a configuration issue
+                  console.warn("Braintree payment options failed to load. Check your Braintree credentials in .env.local");
+                  setError("Payment form could not be loaded. Please check your payment configuration or try refreshing the page.");
+                } else {
+                  // Other errors - log with details
+                  console.error("Braintree Drop-in error:", err);
+                  let errorMsg = "Failed to initialize payment form";
+                  
+                  // Handle different error types
+                  if (err.message) {
+                    errorMsg += ": " + err.message;
+                  } else if (typeof err === 'string') {
+                    errorMsg += ": " + err;
+                  } else if (err.type) {
+                    errorMsg += ` (${err.type})`;
+                  }
+                  
+                  // Check for specific error types
+                  if (err.message?.includes('authorization') || err.message?.includes('credentials') || err.message?.includes('Invalid')) {
+                    errorMsg += ". Please check your Braintree credentials in .env.local";
+                  }
+                  
+                  setError(errorMsg);
                 }
                 
-                // Check for specific error types
-                if (err.message?.includes('authorization') || err.message?.includes('credentials') || err.message?.includes('Invalid')) {
-                  errorMsg += ". Please check your Braintree credentials in .env.local";
-                } else if (err.message?.includes('All payment options failed') || err.type === 'DropinError') {
-                  errorMsg += ". This usually means the payment form couldn't load. Try refreshing the page.";
-                }
-                
-                setError(errorMsg);
                 setLoading(false);
                 initializedRef.current = false;
                 return;
@@ -387,6 +349,65 @@ export default function CheckoutPage() {
     };
   }, [items.length, router]);
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError("Please enter a coupon code");
+      return;
+    }
+
+    setValidatingCoupon(true);
+    setCouponError(null);
+
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: couponCode.trim().toUpperCase(),
+          items: items.map((item) => ({
+            productId: item.productId,
+            price: item.price,
+            quantity: item.quantity,
+          })),
+          subtotal,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.valid) {
+        setAppliedCoupon({
+          id: data.coupon.id,
+          code: data.coupon.code,
+          name: data.coupon.name,
+          discountAmount: data.discountAmount,
+        });
+        setCouponCode("");
+        setCouponError(null);
+      } else {
+        setCouponError(data.error || "Invalid coupon code");
+        setAppliedCoupon(null);
+      }
+    } catch (err) {
+      setCouponError("Failed to validate coupon. Please try again.");
+      setAppliedCoupon(null);
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError(null);
+  };
+
+  const handleSelectCoupon = async (coupon: any) => {
+    setCouponCode(coupon.code);
+    setShowAvailableCoupons(false);
+    await handleApplyCoupon();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -422,7 +443,7 @@ export default function CheckoutPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             paymentMethodNonce: null, // No payment for free orders
-            amount: "0.00",
+            amount: total.toFixed(2),
             items: items.map((item) => ({
               productId: item.productId,
               title: item.title,
@@ -430,6 +451,9 @@ export default function CheckoutPage() {
               quantity: item.quantity,
             })),
             shippingInfo,
+            couponId: appliedCoupon?.id,
+            couponCode: appliedCoupon?.code,
+            discountAmount: appliedCoupon?.discountAmount || 0,
           }),
         });
 
@@ -488,7 +512,7 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           paymentMethodNonce: payload.nonce,
-          amount: getTotal().toFixed(2),
+          amount: total.toFixed(2),
           items: items.map((item) => ({
             productId: item.productId,
             title: item.title,
@@ -496,6 +520,9 @@ export default function CheckoutPage() {
             quantity: item.quantity,
           })),
           shippingInfo,
+          couponId: appliedCoupon?.id,
+          couponCode: appliedCoupon?.code,
+          discountAmount: appliedCoupon?.discountAmount || 0,
         }),
       });
 
@@ -731,6 +758,115 @@ export default function CheckoutPage() {
               </>
             )}
 
+            {/* Coupon Section */}
+            <div className="border-t pt-4 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold">Coupon Code</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowAvailableCoupons(!showAvailableCoupons)}
+                  className="text-sm text-zinc-600 hover:text-black underline"
+                >
+                  {showAvailableCoupons ? "Hide" : "See Available Coupons"}
+                </button>
+              </div>
+
+              {showAvailableCoupons && availableCoupons.length > 0 && (
+                <div className="mb-4 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
+                  <p className="text-sm font-medium mb-2">Available Coupons:</p>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {availableCoupons.map((coupon) => (
+                      <button
+                        key={coupon.id}
+                        type="button"
+                        onClick={() => handleSelectCoupon(coupon)}
+                        className="w-full text-left p-3 rounded-lg border border-zinc-200 hover:border-black hover:bg-white transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-mono font-semibold text-sm">{coupon.code}</div>
+                            <div className="text-xs text-zinc-600 mt-0.5">{coupon.name}</div>
+                            {coupon.description && (
+                              <div className="text-xs text-zinc-500 mt-1">{coupon.description}</div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold text-green-600">
+                              {coupon.discountType === "percentage"
+                                ? `${coupon.discountValue}% OFF`
+                                : `$${coupon.discountValue.toFixed(2)} OFF`}
+                            </div>
+                            {coupon.minPurchaseAmount && (
+                              <div className="text-xs text-zinc-500 mt-0.5">
+                                Min: ${coupon.minPurchaseAmount.toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {appliedCoupon ? (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-mono font-semibold text-sm">{appliedCoupon.code}</div>
+                      <div className="text-xs text-zinc-600">{appliedCoupon.name}</div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-green-600">
+                        -${appliedCoupon.discountAmount.toFixed(2)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="text-xs text-red-600 hover:text-red-800 underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value.toUpperCase());
+                      setCouponError(null);
+                    }}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleApplyCoupon();
+                      }
+                    }}
+                    placeholder="Enter coupon code"
+                    className="flex-1 border rounded px-3 py-2 text-sm"
+                    disabled={validatingCoupon}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    disabled={validatingCoupon || !couponCode.trim()}
+                    className="px-4 py-2 bg-black text-white text-sm rounded hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {validatingCoupon ? "..." : "Apply"}
+                  </button>
+                </div>
+              )}
+
+              {couponError && (
+                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-xs">
+                  {couponError}
+                </div>
+              )}
+            </div>
+
             <div className="border-t pt-4 mb-6">
               <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
               <div className="space-y-2 mb-4">
@@ -743,9 +879,21 @@ export default function CheckoutPage() {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between font-semibold text-lg pt-2 border-t">
-                <span>Total:</span>
-                <span>${getTotal().toFixed(2)}</span>
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal:</span>
+                  <span>${subtotal.toFixed(2)}</span>
+                </div>
+                {appliedCoupon && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Discount ({appliedCoupon.code}):</span>
+                    <span>-${discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+                  <span>Total:</span>
+                  <span>${total.toFixed(2)}</span>
+                </div>
               </div>
             </div>
 
