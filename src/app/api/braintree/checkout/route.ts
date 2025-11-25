@@ -31,6 +31,41 @@ export async function POST(request: Request) {
     const orderAmount = parseFloat(amount || "0");
     const isFreeOrder = orderAmount === 0;
 
+    // Validate stock availability before processing payment
+    const stockValidationErrors: string[] = [];
+    for (const item of items) {
+      if (item.productId) {
+        const product = await prisma.product.findUnique({
+          where: { id: item.productId },
+          select: { id: true, title: true, stockQuantity: true },
+        });
+
+        if (!product) {
+          stockValidationErrors.push(`Product "${item.title}" no longer exists`);
+          continue;
+        }
+
+        if (product.stockQuantity !== null && product.stockQuantity < item.quantity) {
+          stockValidationErrors.push(
+            `"${product.title}": Only ${product.stockQuantity} available, but ${item.quantity} requested`
+          );
+        } else if (product.stockQuantity === 0) {
+          stockValidationErrors.push(`"${product.title}" is out of stock`);
+        }
+      }
+    }
+
+    if (stockValidationErrors.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Stock validation failed",
+          stockErrors: stockValidationErrors,
+        },
+        { status: 400 }
+      );
+    }
+
     // Only process payment if order has a cost
     let transactionId: string | null = null;
     if (!isFreeOrder) {

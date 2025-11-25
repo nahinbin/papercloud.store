@@ -6,7 +6,8 @@ import CataloguesSkeleton from "./_components/CataloguesSkeleton";
 import ProductsSection from "./_components/ProductsSection";
 import ProductsSkeleton from "./_components/ProductsSkeleton";
 
-export const revalidate = 300; // Revalidate every 5 minutes (data is cached in DB layer)
+export const revalidate = 0; // Always serve the freshest homepage content
+export const dynamic = "force-dynamic";
 
 export default function Home() {
   return (

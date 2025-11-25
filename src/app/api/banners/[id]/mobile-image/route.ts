@@ -21,7 +21,8 @@ export async function GET(
       return new NextResponse(buffer, {
         headers: {
           "Content-Type": banner.mobileImageMimeType,
-          "Cache-Control": "public, max-age=31536000, immutable",
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          Pragma: "no-cache",
           "X-Content-Type-Options": "nosniff",
         },
       });

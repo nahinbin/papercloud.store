@@ -1,5 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
+import { getUserBySessionToken } from "@/lib/authDb";
 import Link from "next/link";
 import Image from "next/image";
 import { getUserAvatarUrl } from "@/lib/gravatar-server";
@@ -10,6 +12,11 @@ interface UserProfilePageProps {
 
 export default async function UserProfilePage({ params }: UserProfilePageProps) {
   const { username } = await params;
+  
+  // Check if this is the current user's profile
+  const cookieStore = await cookies();
+  const token = cookieStore.get("session")?.value;
+  const currentUser = await getUserBySessionToken(token);
   
   const user = await prisma.user.findUnique({
     where: { username },
@@ -25,6 +32,11 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 
   if (!user) {
     notFound();
+  }
+
+  // If viewing own profile, redirect to account page
+  if (currentUser && currentUser.id === user.id) {
+    redirect("/account");
   }
 
   // Get user's order count
@@ -97,12 +109,6 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
             <div>
               <h2 className="text-lg font-semibold text-zinc-900 mb-4">About</h2>
               <div className="space-y-3">
-                {user.email && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-zinc-500 w-24">Email:</span>
-                    <span className="text-zinc-900">{user.email}</span>
-                  </div>
-                )}
                 <div className="flex items-center gap-3 text-sm">
                   <span className="text-zinc-500 w-24">Username:</span>
                   <span className="text-zinc-900">@{user.username}</span>

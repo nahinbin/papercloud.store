@@ -15,8 +15,14 @@ export default function Navbar() {
 	const [userEmail, setUserEmail] = useState<string | null>(null);
 	const [userName, setUserName] = useState<string | null>(null);
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const [isMounted, setIsMounted] = useState(false);
 	const { getItemCount } = useCart();
 	const cartItemCount = getItemCount();
+
+	// Prevent hydration mismatch by only showing cart count after mount
+	useEffect(() => {
+		setIsMounted(true);
+	}, []);
 
 	useEffect(() => {
  		let cancelled = false;
@@ -140,7 +146,7 @@ export default function Navbar() {
 									d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9h12l-2-9M10 21a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z"
 								/>
 							</svg>
-							{cartItemCount > 0 && (
+							{isMounted && cartItemCount > 0 && (
 								<span className="absolute -right-1 -top-1 bg-black text-white text-[10px] rounded-full min-w-[1.25rem] px-1 py-0.5 text-center leading-none">
 									{cartItemCount}
 								</span>
@@ -277,7 +283,7 @@ export default function Navbar() {
 											</svg>
 											<span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900">Cart</span>
 										</div>
-										{cartItemCount > 0 && (
+										{isMounted && cartItemCount > 0 && (
 											<span className="bg-black text-white text-xs font-medium rounded-full min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center">
 												{cartItemCount}
 											</span>
@@ -307,34 +313,6 @@ export default function Navbar() {
 												</svg>
 												<span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900">Account</span>
 											</Link>
-											{username && (
-												<Link
-													href={`/users/${username}`}
-													onClick={closeMenu}
-													className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-zinc-50 transition-colors group"
-												>
-													<svg
-														className="w-5 h-5 text-zinc-600 group-hover:text-zinc-900"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															strokeLinecap="round"
-															strokeLinejoin="round"
-															strokeWidth={2}
-															d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-														/>
-														<path
-															strokeLinecap="round"
-															strokeLinejoin="round"
-															strokeWidth={2}
-															d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-														/>
-													</svg>
-													<span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900">Profile</span>
-												</Link>
-											)}
 											{hasAdminAccess && (
 												<Link
 													href="/admin"

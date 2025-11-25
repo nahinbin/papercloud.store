@@ -84,16 +84,21 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
       suppressHydrationWarning
     >
       <div className="flex">
-        {banners.map((banner) => {
+        {banners.map((banner, index) => {
+          const priority = index === 0;
+          const mobileSrc = banner.mobileImageUrl || banner.imageUrl || banner.desktopImageUrl;
+          const desktopSrc = banner.desktopImageUrl || banner.imageUrl || banner.mobileImageUrl;
+          const hasAnyImage = mobileSrc || desktopSrc;
+
           const BannerContent = (
             <div className="flex-shrink-0 w-screen relative overflow-hidden bg-gray-200 snap-start snap-always banner-item">
               {/* Mobile Image */}
-              {banner.mobileImageUrl && (
+              {mobileSrc && (
                 <Image
-                  src={banner.mobileImageUrl}
+                  src={mobileSrc}
                   alt="Banner"
                   fill
-                  priority={banners.indexOf(banner) === 0}
+                  priority={priority}
                   className="object-cover md:hidden"
                   sizes="100vw"
                   placeholder="blur"
@@ -101,33 +106,20 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
                 />
               )}
               {/* Desktop Image */}
-              {banner.desktopImageUrl && (
+              {desktopSrc && (
                 <Image
-                  src={banner.desktopImageUrl}
+                  src={desktopSrc}
                   alt="Banner"
                   fill
-                  priority={banners.indexOf(banner) === 0}
+                  priority={priority}
                   className="object-cover hidden md:block"
                   sizes="100vw"
                   placeholder="blur"
                   blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHhYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQADAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                 />
               )}
-              {/* Fallback to old imageUrl if mobile/desktop not set */}
-              {!banner.mobileImageUrl && !banner.desktopImageUrl && banner.imageUrl && (
-                <Image
-                  src={banner.imageUrl}
-                  alt="Banner"
-                  fill
-                  priority={banners.indexOf(banner) === 0}
-                  className="object-cover"
-                  sizes="100vw"
-                  placeholder="blur"
-                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHhYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQADAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
-                />
-              )}
               {/* No image fallback */}
-              {!banner.mobileImageUrl && !banner.desktopImageUrl && !banner.imageUrl && (
+              {!hasAnyImage && (
                 <div className="w-full h-full flex items-center justify-center">
                   <span className="text-gray-400">No Image</span>
                 </div>

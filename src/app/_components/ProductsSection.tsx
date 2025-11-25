@@ -12,7 +12,8 @@ async function getCurrentUser() {
 }
 
 export default async function ProductsSection() {
-  const [products, user] = await Promise.all([listHomeProducts(), getCurrentUser()]);
+  // Pass a high limit to show all products (or at least 100)
+  const [products, user] = await Promise.all([listHomeProducts(100), getCurrentUser()]);
 
   const isAdmin = Boolean(user?.isAdmin || user?.username === "admin");
 
@@ -46,7 +47,11 @@ export default async function ProductsSection() {
               key={product.id}
               href={`/products/${product.id}`}
               prefetch={index < 6}
-              className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-white/70 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              className={`group flex flex-col overflow-hidden rounded-2xl border shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${
+                product.stockQuantity === 0 
+                  ? "border-zinc-200 bg-zinc-50/50 opacity-75" 
+                  : "border-zinc-100 bg-white/70"
+              }`}
             >
               {product.imageUrl ? (
                 <div className="relative aspect-[20/21] w-full overflow-hidden bg-zinc-100">
@@ -76,9 +81,14 @@ export default async function ProductsSection() {
                 </h3>
                 <p className="text-xl font-bold text-zinc-900">${product.price.toFixed(2)}</p>
                 {typeof product.stockQuantity === "number" && (
-                  <p className={`text-xs ${product.stockQuantity > 0 ? "text-emerald-600" : "text-red-600"}`}>
-                    {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : "Out of stock"}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className={`text-xs font-medium ${product.stockQuantity > 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : "Out of stock"}
+                    </p>
+                    {product.stockQuantity === 0 && (
+                      <span className="text-[10px] uppercase tracking-wider text-red-600 font-semibold">Sold Out</span>
+                    )}
+                  </div>
                 )}
               </div>
             </Link>

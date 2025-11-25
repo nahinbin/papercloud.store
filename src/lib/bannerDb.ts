@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import { prisma } from "./prisma";
 
 export interface Banner {
@@ -21,6 +20,12 @@ export interface Banner {
 }
 
 export type BannerSummary = Pick<Banner, "id" | "title" | "imageUrl" | "mobileImageUrl" | "desktopImageUrl" | "linkUrl" | "order">;
+
+const withVersion = (url: string | undefined, updatedAt: Date | number) => {
+  if (!url) return undefined;
+  const version = typeof updatedAt === "number" ? updatedAt : updatedAt.getTime();
+  return `${url}${url.includes("?") ? "&" : "?"}v=${version}`;
+};
 
 export async function createBanner(input: Omit<Banner, "id" | "createdAt" | "updatedAt">): Promise<Banner> {
   try {
@@ -47,23 +52,31 @@ export async function createBanner(input: Omit<Banner, "id" | "createdAt" | "upd
       },
     });
 
+    const updatedAt = banner.updatedAt.getTime();
+
     return {
       id: banner.id,
       title: banner.title ?? undefined,
-      imageUrl: banner.imageUrl ?? undefined,
+      imageUrl: banner.imageData
+        ? withVersion(`/api/banners/${banner.id}/image`, updatedAt)
+        : withVersion(banner.imageUrl ?? undefined, updatedAt),
       imageData: banner.imageData ? Buffer.from(banner.imageData) : undefined,
       imageMimeType: banner.imageMimeType ?? undefined,
-      mobileImageUrl: banner.mobileImageData ? `/api/banners/${banner.id}/mobile-image` : (banner.mobileImageUrl ?? undefined),
+      mobileImageUrl: banner.mobileImageData
+        ? withVersion(`/api/banners/${banner.id}/mobile-image`, updatedAt)
+        : withVersion(banner.mobileImageUrl ?? undefined, updatedAt),
       mobileImageData: banner.mobileImageData ? Buffer.from(banner.mobileImageData) : undefined,
       mobileImageMimeType: banner.mobileImageMimeType ?? undefined,
-      desktopImageUrl: banner.desktopImageData ? `/api/banners/${banner.id}/desktop-image` : (banner.desktopImageUrl ?? undefined),
+      desktopImageUrl: banner.desktopImageData
+        ? withVersion(`/api/banners/${banner.id}/desktop-image`, updatedAt)
+        : withVersion(banner.desktopImageUrl ?? undefined, updatedAt),
       desktopImageData: banner.desktopImageData ? Buffer.from(banner.desktopImageData) : undefined,
       desktopImageMimeType: banner.desktopImageMimeType ?? undefined,
       linkUrl: banner.linkUrl ?? undefined,
       order: banner.order,
       isActive: banner.isActive,
       createdAt: banner.createdAt.getTime(),
-      updatedAt: banner.updatedAt.getTime(),
+      updatedAt,
     };
   } catch (error: any) {
     if (error?.message?.includes('Cannot read properties of undefined') || 
@@ -83,24 +96,33 @@ export async function listBanners(activeOnly: boolean = false): Promise<Banner[]
       orderBy: [{ order: "asc" }, { createdAt: "desc" }],
     });
 
-    return banners.map((banner: any) => ({
-      id: banner.id,
-      title: banner.title ?? undefined,
-      imageUrl: banner.imageData ? `/api/banners/${banner.id}/image` : (banner.imageUrl ?? undefined),
-      imageData: undefined, // Don't return image data in list (too large)
-      imageMimeType: banner.imageMimeType ?? undefined,
-      mobileImageUrl: banner.mobileImageData ? `/api/banners/${banner.id}/mobile-image` : (banner.mobileImageUrl ?? undefined),
-      mobileImageData: undefined,
-      mobileImageMimeType: banner.mobileImageMimeType ?? undefined,
-      desktopImageUrl: banner.desktopImageData ? `/api/banners/${banner.id}/desktop-image` : (banner.desktopImageUrl ?? undefined),
-      desktopImageData: undefined,
-      desktopImageMimeType: banner.desktopImageMimeType ?? undefined,
-      linkUrl: banner.linkUrl ?? undefined,
-      order: banner.order,
-      isActive: banner.isActive,
-      createdAt: banner.createdAt.getTime(),
-      updatedAt: banner.updatedAt.getTime(),
-    }));
+    return banners.map((banner: any) => {
+      const updatedAt = banner.updatedAt.getTime();
+      return {
+        id: banner.id,
+        title: banner.title ?? undefined,
+        imageUrl: banner.imageData
+          ? withVersion(`/api/banners/${banner.id}/image`, updatedAt)
+          : withVersion(banner.imageUrl ?? undefined, updatedAt),
+        imageData: undefined, // Don't return image data in list (too large)
+        imageMimeType: banner.imageMimeType ?? undefined,
+        mobileImageUrl: banner.mobileImageData
+          ? withVersion(`/api/banners/${banner.id}/mobile-image`, updatedAt)
+          : withVersion(banner.mobileImageUrl ?? undefined, updatedAt),
+        mobileImageData: undefined,
+        mobileImageMimeType: banner.mobileImageMimeType ?? undefined,
+        desktopImageUrl: banner.desktopImageData
+          ? withVersion(`/api/banners/${banner.id}/desktop-image`, updatedAt)
+          : withVersion(banner.desktopImageUrl ?? undefined, updatedAt),
+        desktopImageData: undefined,
+        desktopImageMimeType: banner.desktopImageMimeType ?? undefined,
+        linkUrl: banner.linkUrl ?? undefined,
+        order: banner.order,
+        isActive: banner.isActive,
+        createdAt: banner.createdAt.getTime(),
+        updatedAt,
+      };
+    });
   } catch (error: any) {
     // Handle case where Banner table doesn't exist yet
     if (error?.code === 'P2021' || error?.message?.includes('does not exist')) {
@@ -119,46 +141,17 @@ export async function listBanners(activeOnly: boolean = false): Promise<Banner[]
   }
 }
 
-const cachedActiveBanners = unstable_cache(
-  async () => {
-    if (!(prisma as any).banner) {
-      console.warn("Banner model not available. Please run: npx prisma generate && npx prisma migrate dev");
-      return [];
-    }
-
-    const banners = await (prisma as any).banner.findMany({
-      where: { isActive: true },
-      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
-      select: {
-        id: true,
-        title: true,
-        imageUrl: true,
-        imageData: true,
-        mobileImageUrl: true,
-        mobileImageData: true,
-        desktopImageUrl: true,
-        desktopImageData: true,
-        linkUrl: true,
-        order: true,
-      },
-    });
-
-    return banners.map((banner: any) => ({
-      id: banner.id,
-      title: banner.title ?? undefined,
-      imageUrl: banner.imageData ? `/api/banners/${banner.id}/image` : (banner.imageUrl ?? undefined),
-      mobileImageUrl: banner.mobileImageData ? `/api/banners/${banner.id}/mobile-image` : (banner.mobileImageUrl ?? undefined),
-      desktopImageUrl: banner.desktopImageData ? `/api/banners/${banner.id}/desktop-image` : (banner.desktopImageUrl ?? undefined),
-      linkUrl: banner.linkUrl ?? undefined,
-      order: banner.order,
-    }));
-  },
-  ["banners", "active", "summary"],
-  { revalidate: 60, tags: ["banners"] }, // Reduced to 60 seconds and added cache tag
-);
-
 export async function listActiveBannerSummaries(): Promise<BannerSummary[]> {
-  return cachedActiveBanners() as Promise<BannerSummary[]>;
+  const banners = await listBanners(true);
+  return banners.map((banner) => ({
+    id: banner.id,
+    title: banner.title,
+    imageUrl: banner.imageUrl,
+    mobileImageUrl: banner.mobileImageUrl,
+    desktopImageUrl: banner.desktopImageUrl,
+    linkUrl: banner.linkUrl,
+    order: banner.order,
+  }));
 }
 
 export async function getBannerById(id: string): Promise<Banner | null> {
@@ -169,23 +162,31 @@ export async function getBannerById(id: string): Promise<Banner | null> {
 
     if (!banner) return null;
 
+    const updatedAt = banner.updatedAt.getTime();
+
     return {
       id: banner.id,
       title: banner.title ?? undefined,
-      imageUrl: banner.imageData ? `/api/banners/${banner.id}/image` : (banner.imageUrl ?? undefined),
+      imageUrl: banner.imageData
+        ? withVersion(`/api/banners/${banner.id}/image`, updatedAt)
+        : withVersion(banner.imageUrl ?? undefined, updatedAt),
       imageData: banner.imageData ? Buffer.from(banner.imageData) : undefined,
       imageMimeType: banner.imageMimeType ?? undefined,
-      mobileImageUrl: banner.mobileImageData ? `/api/banners/${banner.id}/mobile-image` : (banner.mobileImageUrl ?? undefined),
+      mobileImageUrl: banner.mobileImageData
+        ? withVersion(`/api/banners/${banner.id}/mobile-image`, updatedAt)
+        : withVersion(banner.mobileImageUrl ?? undefined, updatedAt),
       mobileImageData: banner.mobileImageData ? Buffer.from(banner.mobileImageData) : undefined,
       mobileImageMimeType: banner.mobileImageMimeType ?? undefined,
-      desktopImageUrl: banner.desktopImageData ? `/api/banners/${banner.id}/desktop-image` : (banner.desktopImageUrl ?? undefined),
+      desktopImageUrl: banner.desktopImageData
+        ? withVersion(`/api/banners/${banner.id}/desktop-image`, updatedAt)
+        : withVersion(banner.desktopImageUrl ?? undefined, updatedAt),
       desktopImageData: banner.desktopImageData ? Buffer.from(banner.desktopImageData) : undefined,
       desktopImageMimeType: banner.desktopImageMimeType ?? undefined,
       linkUrl: banner.linkUrl ?? undefined,
       order: banner.order,
       isActive: banner.isActive,
       createdAt: banner.createdAt.getTime(),
-      updatedAt: banner.updatedAt.getTime(),
+      updatedAt,
     };
   } catch (error: any) {
     if (error?.message?.includes('Cannot read properties of undefined') || 
@@ -226,23 +227,31 @@ export async function updateBanner(
       },
     });
 
+    const updatedAt = banner.updatedAt.getTime();
+
     return {
       id: banner.id,
       title: banner.title ?? undefined,
-      imageUrl: banner.imageData ? `/api/banners/${banner.id}/image` : (banner.imageUrl ?? undefined),
+      imageUrl: banner.imageData
+        ? withVersion(`/api/banners/${banner.id}/image`, updatedAt)
+        : withVersion(banner.imageUrl ?? undefined, updatedAt),
       imageData: banner.imageData ? Buffer.from(banner.imageData) : undefined,
       imageMimeType: banner.imageMimeType ?? undefined,
-      mobileImageUrl: banner.mobileImageData ? `/api/banners/${banner.id}/mobile-image` : (banner.mobileImageUrl ?? undefined),
+      mobileImageUrl: banner.mobileImageData
+        ? withVersion(`/api/banners/${banner.id}/mobile-image`, updatedAt)
+        : withVersion(banner.mobileImageUrl ?? undefined, updatedAt),
       mobileImageData: banner.mobileImageData ? Buffer.from(banner.mobileImageData) : undefined,
       mobileImageMimeType: banner.mobileImageMimeType ?? undefined,
-      desktopImageUrl: banner.desktopImageData ? `/api/banners/${banner.id}/desktop-image` : (banner.desktopImageUrl ?? undefined),
+      desktopImageUrl: banner.desktopImageData
+        ? withVersion(`/api/banners/${banner.id}/desktop-image`, updatedAt)
+        : withVersion(banner.desktopImageUrl ?? undefined, updatedAt),
       desktopImageData: banner.desktopImageData ? Buffer.from(banner.desktopImageData) : undefined,
       desktopImageMimeType: banner.desktopImageMimeType ?? undefined,
       linkUrl: banner.linkUrl ?? undefined,
       order: banner.order,
       isActive: banner.isActive,
       createdAt: banner.createdAt.getTime(),
-      updatedAt: banner.updatedAt.getTime(),
+      updatedAt,
     };
   } catch (error: any) {
     if (error?.message?.includes('Cannot read properties of undefined') || 

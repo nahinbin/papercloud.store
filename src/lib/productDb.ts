@@ -102,41 +102,38 @@ export async function listProducts(): Promise<Product[]> {
   }));
 }
 
-const cachedHomeProducts = unstable_cache(
-  async (limit: number) => {
-    const products = await prisma.product.findMany({
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        price: true,
-        imageUrl: true,
-        imageData: true,
-        brand: true,
-        stockQuantity: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+// Removed caching to ensure immediate updates since home page is force-dynamic
+async function getHomeProducts(limit: number) {
+  const products = await prisma.product.findMany({
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      price: true,
+      imageUrl: true,
+      imageData: true,
+      brand: true,
+      stockQuantity: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
 
-    return products.map((product) => ({
-      id: product.id,
-      title: product.title,
-      description: product.description ?? undefined,
-      price: product.price,
-      imageUrl: product.imageData ? `/api/products/${product.id}/image` : (product.imageUrl ?? undefined),
-      brand: product.brand ?? undefined,
-      stockQuantity: product.stockQuantity ?? undefined,
-    }));
-  },
-  ["home", "products", "summary"],
-  { revalidate: 60 },
-);
+  return products.map((product) => ({
+    id: product.id,
+    title: product.title,
+    description: product.description ?? undefined,
+    price: product.price,
+    imageUrl: product.imageData ? `/api/products/${product.id}/image` : (product.imageUrl ?? undefined),
+    brand: product.brand ?? undefined,
+    stockQuantity: product.stockQuantity ?? undefined,
+  }));
+}
 
-export async function listHomeProducts(limit = 12): Promise<ProductSummary[]> {
-  return cachedHomeProducts(limit) as Promise<ProductSummary[]>;
+export async function listHomeProducts(limit = 100): Promise<ProductSummary[]> {
+  return getHomeProducts(limit);
 }
 
 const cachedProductById = unstable_cache(

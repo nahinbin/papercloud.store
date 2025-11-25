@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ProductVariants from "./ProductVariants";
 import AddToCartButton from "./AddToCartButton";
+import SaveProductButton from "./SaveProductButton";
 
 interface ProductPageClientProps {
   colorVariants?: string[];
@@ -43,17 +44,22 @@ export default function ProductPageClient({
         onSizeSelect={setSelectedSize}
       />
 
-      {/* Buy Button */}
+      {/* Buy Button and Save Button */}
       <div className="pt-4">
-        <AddToCartButton
-          productId={productId}
-          title={title}
-          price={price}
-          imageUrl={imageUrl}
-          stockQuantity={stockQuantity}
-          selectedColor={selectedColor}
-          selectedSize={selectedSize}
-        />
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <AddToCartButton
+              productId={productId}
+              title={title}
+              price={price}
+              imageUrl={imageUrl}
+              stockQuantity={stockQuantity}
+              selectedColor={selectedColor}
+              selectedSize={selectedSize}
+            />
+          </div>
+          <SaveProductButton productId={productId} />
+        </div>
       </div>
     </>
   );
