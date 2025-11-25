@@ -97,7 +97,7 @@ export default function NewProductPage() {
     }
     
     if (selectedCatalogues.length === 0) {
-      setError("Please select at least one catalogue");
+      setError("Please select at least one category");
       return;
     }
     
@@ -229,14 +229,14 @@ export default function NewProductPage() {
               </div>
             </div>
 
-            {/* Catalogues */}
+            {/* Categories */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Catalogues <span className="text-red-500">*</span>
+                Categories <span className="text-red-500">*</span>
               </label>
               {loadingCatalogues ? (
                 <div className="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50">
-                  Loading catalogues...
+                  Loading categories...
                 </div>
               ) : catalogues.length > 0 ? (
                 <div className="space-y-2">
@@ -285,15 +285,15 @@ export default function NewProductPage() {
                     </div>
                   )}
                   <p className="text-xs text-gray-500">
-                    Select one or more catalogues for this product
+                    Select one or more categories for this product
                   </p>
                 </div>
               ) : (
                 <div className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-yellow-50">
                   <p className="text-sm text-yellow-800">
-                    No catalogues found. Please create a catalogue first in the{" "}
+                    No categories found. Please create a category first in the{" "}
                     <a href="/admin/catalogues" className="underline font-medium">
-                      Catalogues section
+                      Categories section
                     </a>
                     .
                   </p>

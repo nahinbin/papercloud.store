@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/LoadingSkeletons";
 
 export default function Loading() {
   return (
-    <LoadingPageShell title="Catalogue" subtitle="Loading products" widthClassName="max-w-5xl">
+    <LoadingPageShell title="Category" subtitle="Loading products" widthClassName="max-w-5xl">
       <div className="space-y-8">
         {/* Header Skeleton */}
         <div className="grid gap-8 md:grid-cols-[2fr,1fr]">

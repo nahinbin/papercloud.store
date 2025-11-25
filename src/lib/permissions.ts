@@ -28,10 +28,10 @@ export const PERMISSIONS = {
   "banners.edit": { name: "Edit Banners", category: "content" },
   "banners.delete": { name: "Delete Banners", category: "content" },
   
-  "catalogues.view": { name: "View Catalogues", category: "content" },
-  "catalogues.create": { name: "Create Catalogues", category: "content" },
-  "catalogues.edit": { name: "Edit Catalogues", category: "content" },
-  "catalogues.delete": { name: "Delete Catalogues", category: "content" },
+  "catalogues.view": { name: "View Categories", category: "content" },
+  "catalogues.create": { name: "Create Categories", category: "content" },
+  "catalogues.edit": { name: "Edit Categories", category: "content" },
+  "catalogues.delete": { name: "Delete Categories", category: "content" },
   
   // Roles & Permissions
   "roles.view": { name: "View Roles", category: "admin" },

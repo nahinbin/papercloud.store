@@ -88,10 +88,10 @@ export default function CataloguePage() {
         const data = await res.json();
         setCatalogues(data.catalogues || []);
       } else {
-        setError("Failed to load catalogues");
+        setError("Failed to load categories");
       }
     } catch {
-      setError("Failed to load catalogues");
+      setError("Failed to load categories");
     } finally {
       setLoading(false);
     }
@@ -185,7 +185,7 @@ export default function CataloguePage() {
       resetForm();
     } else {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "Failed to save catalogue");
+      alert(data.error || "Failed to save category");
     }
   };
 
@@ -218,12 +218,12 @@ export default function CataloguePage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this catalogue?")) return;
+    if (!confirm("Delete this category?")) return;
     const res = await fetch(`/api/admin/catalogues/${id}`, { method: "DELETE" });
     if (res.ok) {
       await fetchCatalogues();
     } else {
-      alert("Failed to delete catalogue");
+      alert("Failed to delete category");
     }
   };
 
@@ -247,8 +247,8 @@ export default function CataloguePage() {
             <Link href="/admin" className="text-zinc-600 hover:text-black underline block mb-3 md:mb-2">
               ← Back to Dashboard
             </Link>
-            <h1 className="text-3xl font-semibold">Catalogue Tiles</h1>
-            <p className="mt-2 text-zinc-600">Curate homepage tiles, assign products, or generate internal catalogue pages.</p>
+            <h1 className="text-3xl font-semibold">Category Tiles</h1>
+            <p className="mt-2 text-zinc-600">Curate homepage tiles, assign products, or generate internal category pages.</p>
           </div>
           <button
             onClick={() => {
@@ -260,7 +260,7 @@ export default function CataloguePage() {
             }}
             className="rounded-full bg-black px-5 py-2 text-white text-sm font-medium hover:bg-zinc-800"
           >
-            {showForm ? "Close form" : "Add catalogue"}
+            {showForm ? "Close form" : "Add category"}
           </button>
         </div>
 
@@ -272,7 +272,7 @@ export default function CataloguePage() {
 
         {showForm && (
           <div className="mb-10 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">{editingId ? "Edit catalogue" : "New catalogue"}</h2>
+            <h2 className="text-xl font-semibold mb-4">{editingId ? "Edit category" : "New category"}</h2>
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div>
                 <label className="text-sm font-medium text-zinc-700">Title</label>
@@ -307,7 +307,7 @@ export default function CataloguePage() {
                     className="mt-1 w-full rounded-lg border px-3 py-2"
                     placeholder="stationery"
                   />
-                  <p className="mt-1 text-xs text-zinc-500">Used for the internal page URL: /catalogues/[slug]</p>
+                  <p className="mt-1 text-xs text-zinc-500">Used for the internal category page URL: /catalogues/[slug]</p>
                 </div>
               </div>
 
@@ -329,7 +329,7 @@ export default function CataloguePage() {
                   onChange={(e) => setForm({ ...form, content: e.target.value })}
                   className="mt-1 w-full rounded-lg border px-3 py-2"
                   rows={4}
-                  placeholder="Additional copy for the internal catalogue page."
+                  placeholder="Additional copy for the internal category page."
                 />
               </div>
 
@@ -407,7 +407,7 @@ export default function CataloguePage() {
                     ))
                   )}
                 </div>
-                <p className="mt-1 text-xs text-zinc-500">These products will appear on the catalogue’s internal page.</p>
+                <p className="mt-1 text-xs text-zinc-500">These products will appear on the category’s internal page.</p>
               </div>
 
               <div className="flex items-center gap-3">
@@ -424,7 +424,7 @@ export default function CataloguePage() {
 
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button type="submit" className="flex-1 rounded-full bg-black px-4 py-2 text-white font-semibold hover:bg-zinc-800">
-                  {editingId ? "Update catalogue" : "Create catalogue"}
+                  {editingId ? "Update category" : "Create category"}
                 </button>
                 <button type="button" onClick={resetForm} className="rounded-full border px-4 py-2 font-semibold hover:bg-zinc-50">
                   Cancel
@@ -496,7 +496,7 @@ export default function CataloguePage() {
 
         {catalogues.length === 0 && !loading && (
           <div className="py-12 text-center text-zinc-500">
-            No catalogues yet. Create one to fill the homepage row.
+            No categories yet. Create one to fill the homepage row.
           </div>
         )}
       </div>

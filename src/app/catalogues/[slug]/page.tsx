@@ -28,7 +28,7 @@ export default async function CataloguePage({
 
         <div className="mt-6 grid gap-8 md:grid-cols-[2fr,1fr]">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Catalogue</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Category</p>
             <h1 className="mt-2 text-3xl font-semibold">{catalogue.title}</h1>
             {catalogue.description && <p className="mt-3 text-zinc-600">{catalogue.description}</p>}
             {catalogue.content && (
@@ -53,7 +53,7 @@ export default async function CataloguePage({
 
         {products.length === 0 ? (
           <div className="mt-12 rounded-3xl border border-dashed border-zinc-200 bg-white/70 p-10 text-center shadow-sm">
-            <p className="text-zinc-600">No products have been assigned to this catalogue yet.</p>
+            <p className="text-zinc-600">No products have been assigned to this category yet.</p>
           </div>
         ) : (
           <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

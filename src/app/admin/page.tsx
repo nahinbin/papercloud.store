@@ -478,21 +478,21 @@ export default function AdminDashboard() {
               </div>
               )}
 
-              {/* Catalogues */}
+              {/* Categories */}
               {isAdmin || permissions.includes("catalogues.view") ? (
               <Link
                 href="/admin/catalogues"
                 className="rounded-2xl border border-zinc-100 bg-white/80 p-6 shadow-sm hover:shadow-md transition-all hover:border-zinc-200"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-zinc-900">Catalogues</h2>
+                  <h2 className="text-xl font-semibold text-zinc-900">Categories</h2>
                   <svg className="h-6 w-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                   </svg>
                 </div>
-                <p className="text-sm text-zinc-600 mb-4">Control the square catalogue tiles</p>
+                <p className="text-sm text-zinc-600 mb-4">Control the square category tiles</p>
                 <div className="flex items-center text-sm font-medium text-black hover:underline">
-                  Manage Catalogues
+                  Manage Categories
                   <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -501,12 +501,12 @@ export default function AdminDashboard() {
               ) : (
               <div className="rounded-2xl border border-zinc-100 bg-white/40 p-6 shadow-sm opacity-50 cursor-not-allowed">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-zinc-500">Catalogues</h2>
+                  <h2 className="text-xl font-semibold text-zinc-500">Categories</h2>
                   <svg className="h-6 w-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                   </svg>
                 </div>
-                <p className="text-sm text-zinc-500 mb-4">Control the square catalogue tiles</p>
+                <p className="text-sm text-zinc-500 mb-4">Control the square category tiles</p>
                 <div className="flex items-center text-sm font-medium text-zinc-400">
                   No Access
                   <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

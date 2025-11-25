@@ -40,16 +40,16 @@ export default async function ProductsSection() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
           {products.map((product, index) => (
             <Link
               key={product.id}
               href={`/products/${product.id}`}
               prefetch={index < 6}
-              className="group rounded-3xl border border-zinc-100 bg-white/80 p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-white/70 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
               {product.imageUrl ? (
-                <div className="relative mb-4 h-48 w-full overflow-hidden rounded-2xl bg-zinc-100">
+                <div className="relative aspect-[20/21] w-full overflow-hidden bg-zinc-100">
                   <Image
                     src={product.imageUrl}
                     alt={product.title}
@@ -63,11 +63,11 @@ export default async function ProductsSection() {
                   />
                 </div>
               ) : (
-                <div className="mb-4 flex h-48 w-full items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50">
+                <div className="flex aspect-[20/21] w-full items-center justify-center border border-dashed border-zinc-200 bg-zinc-50">
                   <span className="text-sm text-zinc-400">No image</span>
                 </div>
               )}
-              <div className="space-y-2">
+              <div className="space-y-2 px-3 py-2.5">
                 {product.brand && (
                   <p className="text-xs uppercase tracking-[0.23em] text-zinc-400">{product.brand}</p>
                 )}

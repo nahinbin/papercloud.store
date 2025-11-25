@@ -12,7 +12,7 @@ export default async function CataloguesSection() {
   return (
     <section className="pt-6" suppressHydrationWarning>
       <div className="text-center" suppressHydrationWarning>
-        <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Catalogues</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">Categories</p>
       </div>
       <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8">
         {catalogues.map((catalogue) => {
