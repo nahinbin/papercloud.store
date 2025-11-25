@@ -12,6 +12,7 @@ const isValidUsername = (username: string): boolean => {
 export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -19,6 +20,9 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [showSecondCard, setShowSecondCard] = useState(false);
+  const [hasInvalidChars, setHasInvalidChars] = useState(false);
 
   // Check for OAuth errors in URL
   useEffect(() => {
@@ -30,19 +34,60 @@ export default function RegisterPage() {
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Filter out invalid characters in real-time
-    const filtered = value.replace(/[^a-z0-9_]/g, '').toLowerCase();
-    setUsername(filtered);
+    // Convert to lowercase and check for invalid characters
+    const lowercased = value.toLowerCase();
+    const hasInvalid = /[^a-z0-9_]/.test(lowercased);
     
-    // Validate and show error immediately
-    if (filtered.length > 0 && !isValidUsername(filtered)) {
-      setUsernameError("Username can only contain lowercase letters, numbers, and underscores");
-      setUsernameStatus("idle");
-    } else {
+    // Filter out invalid characters (keep only lowercase letters, numbers, underscore)
+    const filtered = lowercased.replace(/[^a-z0-9_]/g, '');
+    
+    setUsername(filtered);
+    // Only show hint if invalid chars were detected and field is not empty
+    setHasInvalidChars(hasInvalid && filtered.length > 0);
+    
+    // Clear username error when typing
+    if (usernameError) {
       setUsernameError(null);
-      if (filtered.length === 0) {
-        setUsernameStatus("idle");
+    }
+    
+    // Reset status if field is empty
+    if (filtered.length === 0) {
+      setUsernameStatus("idle");
+    }
+  };
+
+  const handleContinue = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setEmailError(null);
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      setEmailError("Please enter a valid email");
+      return;
+    }
+
+    // Check if email is taken
+    try {
+      const res = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email)}`);
+      if (!res.ok) {
+        throw new Error("Failed to check email");
       }
+      const data = await res.json();
+      if (!data.available) {
+        setEmailError("Email is taken already");
+        return;
+      }
+      
+      // Email is available, proceed to next card
+      setShowSecondCard(true);
+      // Focus name field after card appears
+      setTimeout(() => {
+        const nameInput = document.querySelector('input[placeholder="Enter your name"]') as HTMLInputElement;
+        nameInput?.focus();
+      }, 100);
+    } catch {
+      setEmailError("Failed to verify email. Please try again.");
     }
   };
 
@@ -107,7 +152,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name || undefined, username, password }),
+        body: JSON.stringify({ name: name || undefined, username, password, email }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -140,7 +185,8 @@ export default function RegisterPage() {
           </Link>
         </div>
 
-        {/* Form Card */}
+        {/* Email Card - First Card */}
+        {!showSecondCard && (
         <div className="bg-white rounded-2xl shadow-xl border border-zinc-200/50 p-8 md:p-10 backdrop-blur-sm">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-center text-zinc-900 mb-2">Create Account</h1>
@@ -182,95 +228,39 @@ export default function RegisterPage() {
             </div>
           </div>
           
-          <form onSubmit={onSubmit} className="space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-zinc-800">
-                Name <span className="text-zinc-400 font-normal text-xs">(optional)</span>
-              </label>
-              <input 
-                className="w-full rounded-xl border border-zinc-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white hover:border-zinc-400" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-zinc-800">Username</label>
+          <form>
+            <div className="mb-5">
+              <label className="mb-2 block text-sm font-semibold text-zinc-800">Email</label>
               <input 
                 className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all bg-white hover:border-zinc-400 ${
-                  usernameError 
-                    ? "border-red-300 focus:ring-red-500" 
-                : usernameStatus === "available"
-                ? "border-green-300 focus:ring-green-500"
+                  emailError
+                    ? "border-red-300 focus:ring-red-500"
                     : "border-zinc-300 focus:ring-black"
                 }`}
-                value={username} 
-                onChange={handleUsernameChange}
-                placeholder="Enter your username"
+                type="email"
+                value={email} 
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailError(null);
+                }}
+                placeholder="Enter your email"
                 required
+                autoFocus
               />
-              {usernameError && (
-                <p className="mt-1.5 text-xs text-red-600 font-medium animate-in fade-in">{usernameError}</p>
-              )}
-          {!usernameError && usernameStatus === "taken" && (
-            <p className="mt-1.5 text-xs text-red-600 font-medium animate-in fade-in">Username taken</p>
-          )}
-          {!usernameError && usernameStatus === "checking" && (
-            <p className="mt-1.5 text-xs text-zinc-500 flex items-center gap-1.5">
-              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              Checking availability...
-            </p>
-          )}
-          {!usernameError && usernameStatus === "available" && (
-            <p className="mt-1.5 text-xs text-green-600 font-medium flex items-center gap-1.5 animate-in fade-in">
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Username available
-            </p>
-          )}
-          {username.length === 0 && usernameStatus === "idle" && (
-                <p className="mt-1.5 text-xs text-zinc-400">Lowercase letters, numbers, and _ only</p>
+              {emailError && (
+                <p className="mt-1.5 text-xs text-red-600 font-medium animate-in fade-in">
+                  {emailError}
+                </p>
               )}
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-zinc-800">Password</label>
-              <input 
-                className="w-full rounded-xl border border-zinc-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white hover:border-zinc-400" 
-                type="password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-              />
-            </div>
-
-            {error && (
-              <div className="rounded-xl bg-red-50 border-2 border-red-200 px-4 py-3 animate-in fade-in slide-in-from-top-2">
-                <p className="text-sm text-red-700 font-medium">{error}</p>
-              </div>
-            )}
-
-            <button 
-              disabled={loading || usernameStatus === "checking" || usernameStatus === "taken"} 
-              className="w-full rounded-xl bg-black px-4 py-3.5 text-white font-semibold hover:bg-zinc-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+            <button
+              type="button"
+              onClick={handleContinue}
+              disabled={email.trim().length === 0}
+              className="w-full rounded-xl bg-black px-4 py-3.5 text-white font-semibold hover:bg-zinc-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] mb-5"
             >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Creating account...
-                </span>
-              ) : (
-                "Create Account"
-              )}
+              Continue
             </button>
 
             <div className="text-center pt-6 border-t border-zinc-200">
@@ -283,6 +273,109 @@ export default function RegisterPage() {
             </div>
           </form>
         </div>
+        )}
+
+        {/* Second Card - Name, Username, Password */}
+        {showSecondCard && (
+          <div className="bg-white rounded-2xl shadow-xl border border-zinc-200/50 p-8 md:p-10 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <form onSubmit={onSubmit} className="space-y-5">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-zinc-800">
+                  Name <span className="text-zinc-400 font-normal text-xs">(optional)</span>
+                </label>
+                <input 
+                  className="w-full rounded-xl border border-zinc-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white hover:border-zinc-400" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-zinc-800">Username</label>
+                <input 
+                  className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all bg-white hover:border-zinc-400 ${
+                    usernameError 
+                      ? "border-red-300 focus:ring-red-500" 
+                  : hasInvalidChars
+                  ? "border-amber-300 focus:ring-amber-500"
+                  : usernameStatus === "available"
+                  ? "border-green-300 focus:ring-green-500"
+                      : "border-zinc-300 focus:ring-black"
+                  }`}
+                  value={username} 
+                  onChange={handleUsernameChange}
+                  placeholder="Enter your username"
+                  required
+                />
+                {usernameError && (
+                  <p className="mt-1.5 text-xs text-red-600 font-medium animate-in fade-in">{usernameError}</p>
+                )}
+                {!usernameError && hasInvalidChars && (
+                  <p className="mt-1.5 text-xs text-amber-600 animate-in fade-in">
+                    Only lowercase letters, numbers, and _ are allowed. Invalid characters removed.
+                  </p>
+                )}
+                {!usernameError && !hasInvalidChars && usernameStatus === "taken" && (
+                  <p className="mt-1.5 text-xs text-red-600 font-medium animate-in fade-in">Username taken</p>
+                )}
+                {!usernameError && !hasInvalidChars && usernameStatus === "checking" && (
+                  <p className="mt-1.5 text-xs text-zinc-500 flex items-center gap-1.5">
+                    <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Checking availability...
+                  </p>
+                )}
+                {!usernameError && !hasInvalidChars && usernameStatus === "available" && (
+                  <p className="mt-1.5 text-xs text-green-600 font-medium flex items-center gap-1.5 animate-in fade-in">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Username available
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-zinc-800">Password</label>
+                <input 
+                  className="w-full rounded-xl border border-zinc-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white hover:border-zinc-400" 
+                  type="password" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+
+              {error && (
+                <div className="rounded-xl bg-red-50 border-2 border-red-200 px-4 py-3 animate-in fade-in slide-in-from-top-2">
+                  <p className="text-sm text-red-700 font-medium">{error}</p>
+                </div>
+              )}
+
+              <button 
+                disabled={loading || usernameStatus === "checking" || usernameStatus === "taken"} 
+                className="w-full rounded-xl bg-black px-4 py-3.5 text-white font-semibold hover:bg-zinc-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Creating account...
+                  </span>
+                ) : (
+                  "Create Account"
+                )}
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );

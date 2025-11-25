@@ -20,7 +20,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const user = await createUser({ name: typeof body.name === "string" ? body.name : undefined, username: body.username, password: body.password });
+    const user = await createUser({ 
+      name: typeof body.name === "string" ? body.name : undefined, 
+      username: body.username, 
+      password: body.password,
+      email: typeof body.email === "string" ? body.email : undefined,
+    });
     const token = await createSession(user.id);
     const res = NextResponse.json({ user });
     res.cookies.set("session", token, {

@@ -24,11 +24,19 @@ function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
-export async function createUser(input: { name?: string; username: string; password: string }): Promise<PublicUser> {
+export async function createUser(input: { name?: string; username: string; password: string; email?: string }): Promise<PublicUser> {
   const existing = await prisma.user.findUnique({
     where: { username: input.username },
   });
   if (existing) throw new Error("Username already taken");
+  
+  // Check if email is already taken
+  if (input.email) {
+    const existingEmail = await prisma.user.findFirst({
+      where: { email: input.email.toLowerCase() },
+    });
+    if (existingEmail) throw new Error("Email already taken");
+  }
   
   // Auto-promote @admin or admin username to admin
   const isAdmin = input.username === "@admin" || input.username === "admin";
@@ -37,6 +45,7 @@ export async function createUser(input: { name?: string; username: string; passw
     data: {
       name: input.name,
       username: input.username,
+      email: input.email?.toLowerCase(),
       passwordHash: hashPassword(input.password),
       isAdmin,
     },

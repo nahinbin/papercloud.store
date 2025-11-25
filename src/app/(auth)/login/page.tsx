@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasInvalidChars, setHasInvalidChars] = useState(false);
 
   // Check for OAuth errors in URL
   useEffect(() => {
@@ -22,9 +23,16 @@ export default function LoginPage() {
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Filter out invalid characters in real-time (lowercase, numbers, underscore only)
-    const filtered = value.replace(/[^a-z0-9_]/g, '').toLowerCase();
+    // Convert to lowercase and check for invalid characters
+    const lowercased = value.toLowerCase();
+    const hasInvalid = /[^a-z0-9_]/.test(lowercased);
+    
+    // Filter out invalid characters (keep only lowercase letters, numbers, underscore)
+    const filtered = lowercased.replace(/[^a-z0-9_]/g, '');
+    
     setUsername(filtered);
+    // Only show hint if invalid chars were detected and field is not empty
+    setHasInvalidChars(hasInvalid && filtered.length > 0);
   };
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -106,7 +114,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-zinc-200"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-zinc-400 font-medium">Or sign in with email</span>
+              <span className="px-4 bg-white text-zinc-400 font-medium">Or sign in with username</span>
             </div>
           </div>
           
@@ -114,13 +122,22 @@ export default function LoginPage() {
             <div>
               <label className="mb-2 block text-sm font-semibold text-zinc-800">Username</label>
               <input 
-                className="w-full rounded-xl border border-zinc-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white hover:border-zinc-400" 
+                className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent transition-all bg-white hover:border-zinc-400 ${
+                  hasInvalidChars 
+                    ? 'border-amber-300 focus:ring-amber-500' 
+                    : 'border-zinc-300 focus:ring-black'
+                }`}
                 value={username} 
                 onChange={handleUsernameChange}
                 placeholder="Enter your username"
                 required
+                autoFocus
               />
-              <p className="mt-1.5 text-xs text-zinc-400">Lowercase letters, numbers, and _ only</p>
+              {hasInvalidChars && (
+                <p className="mt-1.5 text-xs text-amber-600 animate-in fade-in">
+                  Only lowercase letters, numbers, and _ are allowed. Invalid characters removed.
+                </p>
+              )}
             </div>
             
             <div>
