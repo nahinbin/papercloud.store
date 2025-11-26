@@ -169,7 +169,7 @@ async function getHomeProducts(limit: number) {
     if (error.message?.includes("Unknown argument `order`")) {
       // Fetch all products and sort manually
       const allProducts = await prisma.product.findMany({
-        where: includeDrafts ? undefined : { isDraft: false },
+        where: { isDraft: false },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
