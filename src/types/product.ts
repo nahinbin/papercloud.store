@@ -23,6 +23,8 @@ export interface Product {
   returnPolicy?: string;
   warranty?: string;
   specifications?: string;
+  isDraft?: boolean;
+  order?: number;
   createdAt: number;
   updatedAt: number;
 }

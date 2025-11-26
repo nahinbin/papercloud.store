@@ -34,15 +34,46 @@ export async function POST(request: Request) {
     let mime: string | undefined = undefined;
     
     if (typeof imageData === 'string' && imageData.startsWith('data:')) {
-      const matches = imageData.match(/^data:([^;]+);base64,(.+)$/);
-      if (matches) {
-        mime = matches[1];
-        const base64Data = matches[2];
+      // Check size limit (e.g., 10MB) to prevent stack overflow
+      if (imageData.length > 10 * 1024 * 1024) {
+        console.error('Image data too large:', imageData.length);
+        return { data: undefined, mimeType: undefined };
+      }
+      
+      // Use indexOf instead of regex for better performance with large strings
+      const commaIndex = imageData.indexOf(',');
+      if (commaIndex === -1) {
+        return { data: undefined, mimeType: undefined };
+      }
+      
+      const header = imageData.substring(0, commaIndex);
+      const base64Data = imageData.substring(commaIndex + 1);
+      
+      // Extract mime type from header (e.g., "data:image/png;base64")
+      const mimeMatch = header.match(/^data:([^;]+)/);
+      if (mimeMatch) {
+        mime = mimeMatch[1];
+      }
+      
+      try {
         data = Buffer.from(base64Data, 'base64');
+      } catch (error) {
+        console.error('Failed to convert base64 to buffer:', error);
+        return { data: undefined, mimeType: undefined };
       }
     } else if (imageData && imageMimeType) {
+      try {
+        // Check size limit
+        if (typeof imageData === 'string' && imageData.length > 10 * 1024 * 1024) {
+          console.error('Image data too large:', imageData.length);
+          return { data: undefined, mimeType: undefined };
+        }
       data = Buffer.from(imageData, 'base64');
       mime = imageMimeType;
+      } catch (error) {
+        console.error('Failed to convert base64 to buffer:', error);
+        return { data: undefined, mimeType: undefined };
+      }
     }
     
     return { data, mimeType: mime };

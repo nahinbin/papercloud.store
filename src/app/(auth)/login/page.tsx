@@ -3,10 +3,12 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { useUser } from "@/contexts/UserContext";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refreshUser } = useUser();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -49,8 +51,10 @@ export default function LoginPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error || "Login failed");
       }
+      // Refresh user context immediately after login to update UI
+      await refreshUser();
+      // Then navigate to home
       router.push("/");
-      router.refresh();
     } catch (err: any) {
       setError(err?.message ?? "Login failed");
     } finally {

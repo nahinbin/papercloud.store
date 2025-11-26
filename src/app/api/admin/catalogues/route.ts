@@ -68,3 +68,26 @@ export async function POST(request: Request) {
   return createSuccessResponse({ catalogue }, 201);
 }
 
+export async function PATCH(request: Request) {
+  const auth = await requirePermission("catalogues.edit");
+  if (auth.error) {
+    return createErrorResponse(auth.error, auth.status);
+  }
+
+  const body = await request.json().catch(() => null);
+  if (!body || !Array.isArray(body.orders)) {
+    return NextResponse.json({ error: "Invalid payload. Expected { orders: Array<{ id: string, order: number }> }" }, { status: 400 });
+  }
+
+  const { updateCatalogue } = await import("@/lib/catalogueDb");
+  
+  // Update all catalogues with new order values
+  const updates = await Promise.all(
+    body.orders.map((item: { id: string; order: number }) =>
+      updateCatalogue(item.id, { order: Number(item.order) })
+    )
+  );
+
+  return createSuccessResponse({ catalogues: updates });
+}
+

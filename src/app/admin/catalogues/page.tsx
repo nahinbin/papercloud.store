@@ -49,6 +49,9 @@ export default function CataloguePage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [products, setProducts] = useState<ProductOption[]>([]);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [isReordering, setIsReordering] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -87,7 +90,9 @@ export default function CataloguePage() {
       const res = await fetch("/api/admin/catalogues");
       if (res.ok) {
         const data = await res.json();
-        setCatalogues(data.catalogues || []);
+        // Sort by order to ensure correct display order
+        const sorted = (data.catalogues || []).sort((a: Catalogue, b: Catalogue) => a.order - b.order);
+        setCatalogues(sorted);
       } else {
         setError("Failed to load categories");
       }
@@ -228,6 +233,116 @@ export default function CataloguePage() {
     }
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
+    // Create a custom drag image for better visual feedback
+    if (e.currentTarget instanceof HTMLElement) {
+      // Find the parent card element
+      const cardElement = e.currentTarget.closest('[class*="rounded-2xl"]') as HTMLElement;
+      if (cardElement) {
+        const rect = cardElement.getBoundingClientRect();
+        const dragImage = cardElement.cloneNode(true) as HTMLElement;
+        dragImage.style.width = `${rect.width}px`;
+        dragImage.style.opacity = "0.9";
+        dragImage.style.transform = "rotate(3deg)";
+        dragImage.style.boxShadow = "0 20px 40px rgba(0,0,0,0.3)";
+        dragImage.style.pointerEvents = "none";
+        document.body.appendChild(dragImage);
+        dragImage.style.position = "absolute";
+        dragImage.style.top = "-1000px";
+        e.dataTransfer.setDragImage(dragImage, rect.width / 2, rect.height / 2);
+        setTimeout(() => {
+          if (document.body.contains(dragImage)) {
+            document.body.removeChild(dragImage);
+          }
+        }, 0);
+      }
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    if (draggedId && draggedId !== id) {
+      setDragOverId(id);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if we're actually leaving the element (not just moving to a child)
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverId(null);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverId(null);
+
+    if (!draggedId || draggedId === targetId) {
+      setDraggedId(null);
+      return;
+    }
+
+    const draggedIndex = catalogues.findIndex((c) => c.id === draggedId);
+    const targetIndex = catalogues.findIndex((c) => c.id === targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedId(null);
+      return;
+    }
+
+    // Create new array with reordered items
+    const newCatalogues = [...catalogues];
+    const [removed] = newCatalogues.splice(draggedIndex, 1);
+    newCatalogues.splice(targetIndex, 0, removed);
+
+    // Update order values based on new positions
+    const orders = newCatalogues.map((catalogue, index) => ({
+      id: catalogue.id,
+      order: index,
+    }));
+
+    // Optimistically update UI
+    setCatalogues(newCatalogues.map((cat, idx) => ({ ...cat, order: idx })));
+
+    // Save to server
+    setIsReordering(true);
+    try {
+      const res = await fetch("/api/admin/catalogues", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orders }),
+      });
+
+      if (!res.ok) {
+        // Revert on error
+        await fetchCatalogues();
+        alert("Failed to update order. Please try again.");
+      }
+    } catch (error) {
+      // Revert on error
+      await fetchCatalogues();
+      alert("Failed to update order. Please try again.");
+    } finally {
+      setIsReordering(false);
+      setDraggedId(null);
+    }
+  };
+
   if (loading || isAdmin === null) {
     return (
       <div className="min-h-screen w-full bg-white flex items-center justify-center">
@@ -247,7 +362,7 @@ export default function CataloguePage() {
           <div>
             <Breadcrumbs className="mb-3 md:mb-2" />
             <h1 className="text-3xl font-semibold">Category Tiles</h1>
-            <p className="mt-2 text-zinc-600">Curate homepage tiles, assign products, or generate internal category pages.</p>
+            <p className="mt-1 text-sm text-zinc-500">Drag and drop categories to reorder them</p>
           </div>
           <button
             onClick={() => {
@@ -375,7 +490,7 @@ export default function CataloguePage() {
                     onChange={(e) => setForm({ ...form, order: e.target.value })}
                     className="mt-1 w-full rounded-lg border px-3 py-2"
                   />
-                  <p className="mt-2 text-xs text-zinc-500">Lower numbers show first.</p>
+                  <p className="mt-2 text-xs text-zinc-500">Lower numbers show first. You can also drag and drop categories to reorder them.</p>
                 </div>
               </div>
 
@@ -433,61 +548,181 @@ export default function CataloguePage() {
           </div>
         )}
 
+        {isReordering && (
+          <div className="mb-4 flex items-center justify-center gap-2 rounded-lg bg-blue-50 px-4 py-2 text-sm text-blue-700">
+            <svg
+              className="h-4 w-4 animate-spin"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span>Updating order...</span>
+          </div>
+        )}
+
         <div className="grid gap-6 md:grid-cols-3">
           {catalogues.map((catalogue) => (
-            <div key={catalogue.id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-              {catalogue.imageUrl ? (
-                <div className="relative mb-4 h-32 w-full overflow-hidden rounded-xl bg-zinc-50">
-                  <Image
-                    src={catalogue.imageUrl}
-                    alt={catalogue.title}
-                    fill
-                    className="object-cover"
-                    unoptimized={catalogue.imageUrl.startsWith("http")}
+            <div
+              key={catalogue.id}
+              className={`group relative rounded-2xl border bg-white p-4 shadow-sm transition-all duration-200 ${
+                draggedId === catalogue.id
+                  ? "opacity-40 scale-95 cursor-grabbing z-50 rotate-2 shadow-2xl"
+                  : dragOverId === catalogue.id
+                  ? "border-blue-500 border-2 scale-[1.03] shadow-xl bg-blue-50 ring-2 ring-blue-200 ring-offset-2"
+                  : "border-zinc-200 hover:shadow-lg hover:border-zinc-300"
+              } ${isReordering && draggedId !== catalogue.id ? "pointer-events-none opacity-40" : ""}`}
+            >
+              {/* Elegant Drag Handle - Top right corner */}
+              <div
+                draggable
+                onDragStart={(e) => handleDragStart(e, catalogue.id)}
+                onDragEnd={handleDragEnd}
+                className="absolute right-2 top-2 z-10 flex h-10 w-10 cursor-grab active:cursor-grabbing items-center justify-center rounded-lg bg-white/80 backdrop-blur-sm shadow-sm border border-zinc-200 hover:bg-white hover:shadow-md hover:scale-110 hover:border-zinc-300 transition-all duration-200 opacity-100"
+                title="Drag to reorder"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="text-zinc-600"
+                >
+                  <path
+                    d="M5 4.5C5.55228 4.5 6 4.05228 6 3.5C6 2.94772 5.55228 2.5 5 2.5C4.44772 2.5 4 2.94772 4 3.5C4 4.05228 4.44772 4.5 5 4.5Z"
+                    fill="currentColor"
                   />
-                </div>
-              ) : (
-                <div className="mb-4 flex h-32 w-full items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50 text-xs text-zinc-400">
-                  No image
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">{catalogue.isActive ? "Active" : "Hidden"}</p>
-                <span className="text-xs text-zinc-500">{catalogue.productIds.length} products</span>
+                  <path
+                    d="M5 9.5C5.55228 9.5 6 9.05228 6 8.5C6 7.94772 5.55228 7.5 5 7.5C4.44772 7.5 4 7.94772 4 8.5C4 9.05228 4.44772 9.5 5 9.5Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M5 13.5C5.55228 13.5 6 13.0523 6 12.5C6 11.9477 5.55228 11.5 5 11.5C4.44772 11.5 4 11.9477 4 12.5C4 13.0523 4.44772 13.5 5 13.5Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M11 4.5C11.5523 4.5 12 4.05228 12 3.5C12 2.94772 11.5523 2.5 11 2.5C10.4477 2.5 10 2.94772 10 3.5C10 4.05228 10.4477 4.5 11 4.5Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M11 9.5C11.5523 9.5 12 9.05228 12 8.5C12 7.94772 11.5523 7.5 11 7.5C10.4477 7.5 10 7.94772 10 8.5C10 9.05228 10.4477 9.5 11 9.5Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M11 13.5C11.5523 13.5 12 13.0523 12 12.5C12 11.9477 11.5523 11.5 11 11.5C10.4477 11.5 10 11.9477 10 12.5C10 13.0523 10.4477 13.5 11 13.5Z"
+                    fill="currentColor"
+                  />
+                </svg>
               </div>
-              <h3 className="mt-1 text-lg font-semibold">{catalogue.title}</h3>
-              {catalogue.slug && (
-                <p className="text-xs text-zinc-500">/catalogues/{catalogue.slug}</p>
-              )}
-              {catalogue.description && <p className="text-sm text-zinc-600 mt-1">{catalogue.description}</p>}
-              {catalogue.linkUrl && <p className="mt-2 text-xs text-zinc-500 truncate">{catalogue.linkUrl}</p>}
-              {catalogue.content && <p className="mt-2 text-xs text-zinc-500 line-clamp-2">{catalogue.content}</p>}
 
-              <div className="mt-3 flex gap-2 text-xs text-zinc-500">
-                {(catalogue.slug || catalogue.linkUrl) && (
-                  <Link
-                    href={catalogue.linkUrl || `/catalogues/${catalogue.slug || catalogue.id}`}
-                    className="underline hover:text-zinc-700"
-                    prefetch={false}
-                  >
-                    View page
-                  </Link>
+              {/* Drop zone indicator - appears when dragging over */}
+              {dragOverId === catalogue.id && draggedId !== catalogue.id && (
+                <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-blue-400 bg-blue-50/50 flex items-center justify-center z-0">
+                  <div className="flex flex-col items-center gap-2 text-blue-600">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="animate-bounce"
+                    >
+                      <path
+                        d="M12 5V19M5 12H19"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                      <span className="text-xs font-medium">Move here</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Drop zone for the card */}
+              <div
+                onDragOver={(e) => handleDragOver(e, catalogue.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, catalogue.id)}
+                className={`relative ${draggedId === catalogue.id ? "pointer-events-none" : ""}`}
+              >
+                {catalogue.imageUrl ? (
+                  <div className={`relative mb-4 h-32 w-full overflow-hidden rounded-xl bg-zinc-50 transition-transform duration-200 ${
+                    draggedId === catalogue.id ? "scale-95" : dragOverId === catalogue.id ? "scale-105" : ""
+                  }`}>
+                    <Image
+                      src={catalogue.imageUrl}
+                      alt={catalogue.title}
+                      fill
+                      className="object-cover"
+                      unoptimized={catalogue.imageUrl.startsWith("http")}
+                    />
+                  </div>
+                ) : (
+                  <div className={`mb-4 flex h-32 w-full items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50 text-xs text-zinc-400 transition-transform duration-200 ${
+                    draggedId === catalogue.id ? "scale-95" : dragOverId === catalogue.id ? "scale-105" : ""
+                  }`}>
+                    No image
+                  </div>
                 )}
-              </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">{catalogue.isActive ? "Active" : "Hidden"}</p>
+                    <span className="text-xs text-zinc-400">•</span>
+                    <span className="text-xs text-zinc-500">Order: {catalogue.order}</span>
+                  </div>
+                  <span className="text-xs text-zinc-500">{catalogue.productIds.length} products</span>
+                </div>
+                <h3 className="mt-1 text-lg font-semibold">{catalogue.title}</h3>
+                {catalogue.slug && (
+                  <p className="text-xs text-zinc-500">/catalogues/{catalogue.slug}</p>
+                )}
+                {catalogue.description && <p className="text-sm text-zinc-600 mt-1">{catalogue.description}</p>}
+                {catalogue.linkUrl && <p className="mt-2 text-xs text-zinc-500 truncate">{catalogue.linkUrl}</p>}
+                {catalogue.content && <p className="mt-2 text-xs text-zinc-500 line-clamp-2">{catalogue.content}</p>}
 
-              <div className="mt-4 flex gap-2">
-                <button
-                  onClick={() => handleEdit(catalogue)}
-                  className="flex-1 rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-zinc-50"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(catalogue.id)}
-                  className="flex-1 rounded-full border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
-                >
-                  Delete
-                </button>
+                <div className="mt-3 flex gap-2 text-xs text-zinc-500" onClick={(e) => e.stopPropagation()}>
+                  {(catalogue.slug || catalogue.linkUrl) && (
+                    <Link
+                      href={catalogue.linkUrl || `/catalogues/${catalogue.slug || catalogue.id}`}
+                      className="underline hover:text-zinc-700"
+                      prefetch={false}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      View page
+                    </Link>
+                  )}
+                </div>
+
+                <div className="mt-4 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => handleEdit(catalogue)}
+                    className="flex-1 rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-zinc-50"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(catalogue.id)}
+                    className="flex-1 rounded-full border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           ))}

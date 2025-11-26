@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from "react";
 import { useUser } from "./UserContext";
 
 export interface CartItem {
@@ -44,17 +44,39 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     return [];
   });
-  const [isLoading, setIsLoading] = useState(true);
+  // Start with isLoading false since we have localStorage data immediately
+  const [isLoading, setIsLoading] = useState(false);
+  const hasLoadedFromServerRef = useRef(false);
+  const previousAuthStateRef = useRef<boolean | null>(null);
 
-  // Load cart from server when user is authenticated
+  // Load cart from server - load in parallel with user auth, not sequentially
   useEffect(() => {
-    if (userLoading) return; // Wait for user context to finish loading
-
     const loadCart = async () => {
-      if (isAuthenticated) {
+      // Wait for user loading to complete
+      if (userLoading) {
+        return;
+      }
+
+      // Track authentication state changes
+      const authStateChanged = previousAuthStateRef.current !== isAuthenticated;
+      previousAuthStateRef.current = isAuthenticated;
+
+      // For guest users, reset the ref and use localStorage data
+      if (!isAuthenticated) {
+        hasLoadedFromServerRef.current = false;
+        return;
+      }
+
+      // If user is authenticated, load from server
+      // Reload if: we haven't loaded yet, OR user just logged in (auth state changed from false to true)
+      if (isAuthenticated && (!hasLoadedFromServerRef.current || authStateChanged)) {
+        hasLoadedFromServerRef.current = true;
+        setIsLoading(true);
         try {
-          // Load from server
-          const res = await fetch("/api/cart");
+          // Load from PostgreSQL server
+          const res = await fetch("/api/cart", {
+            cache: "no-store",
+          });
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data.items)) {
@@ -66,9 +88,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         } catch (error) {
           console.error("Failed to load cart from server", error);
           // Keep localStorage items as fallback
+        } finally {
+          setIsLoading(false);
         }
       }
-      setIsLoading(false);
     };
 
     loadCart();

@@ -33,6 +33,8 @@ export async function createProduct(input: Omit<Product, "id" | "createdAt" | "u
       returnPolicy: input.returnPolicy,
       warranty: input.warranty,
       specifications: input.specifications,
+      isDraft: input.isDraft ?? false,
+      order: input.order ?? 0,
     },
   });
 
@@ -61,15 +63,48 @@ export async function createProduct(input: Omit<Product, "id" | "createdAt" | "u
     returnPolicy: product.returnPolicy ?? undefined,
     warranty: product.warranty ?? undefined,
     specifications: product.specifications ?? undefined,
+    isDraft: product.isDraft ?? false,
+    order: product.order ?? 0,
     createdAt: product.createdAt.getTime(),
     updatedAt: product.updatedAt.getTime(),
   };
 }
 
-export async function listProducts(): Promise<Product[]> {
-  const products = await prisma.product.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+export async function listProducts(includeDrafts: boolean = false): Promise<Product[]> {
+  let products;
+  try {
+    // Try to use order field if Prisma Client has been regenerated
+    products = await prisma.product.findMany({
+      where: includeDrafts ? undefined : { isDraft: false },
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+    });
+  } catch (error: any) {
+    // Fallback if order field doesn't exist in Prisma Client yet
+    if (error.message?.includes("Unknown argument `order`")) {
+      // Fetch all products and sort manually
+      products = await prisma.product.findMany({
+        orderBy: { createdAt: "desc" },
+      });
+      
+      // Fetch order values using raw query
+      const orderData = await prisma.$queryRaw<Array<{ id: string; order: number }>>`
+        SELECT id, "order" FROM products
+      `;
+      const orderMap = new Map(orderData.map(p => [p.id, p.order ?? 0]));
+      
+      // Sort by order, then by createdAt
+      products.sort((a, b) => {
+        const orderA = orderMap.get(a.id) ?? 0;
+        const orderB = orderMap.get(b.id) ?? 0;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
+    } else {
+      throw error;
+    }
+  }
 
   return products.map((product) => ({
     id: product.id,
@@ -97,6 +132,8 @@ export async function listProducts(): Promise<Product[]> {
     returnPolicy: product.returnPolicy ?? undefined,
     warranty: product.warranty ?? undefined,
     specifications: product.specifications ?? undefined,
+    isDraft: (product as any).isDraft ?? false,
+    order: (product as any).order ?? 0,
     createdAt: product.createdAt.getTime(),
     updatedAt: product.updatedAt.getTime(),
   }));
@@ -104,22 +141,71 @@ export async function listProducts(): Promise<Product[]> {
 
 // Removed caching to ensure immediate updates since home page is force-dynamic
 async function getHomeProducts(limit: number) {
-  const products = await prisma.product.findMany({
-    orderBy: { createdAt: "desc" },
-    take: limit,
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      price: true,
-      imageUrl: true,
-      imageData: true,
-      brand: true,
-      stockQuantity: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
+  let products;
+  try {
+    // Try to use order field if Prisma Client has been regenerated
+    products = await prisma.product.findMany({
+      where: {
+        isDraft: false, // Exclude drafts from public view
+      },
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+      take: limit,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        price: true,
+        imageUrl: true,
+        imageData: true,
+        brand: true,
+        stockQuantity: true,
+        order: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  } catch (error: any) {
+    // Fallback if order field doesn't exist in Prisma Client yet
+    if (error.message?.includes("Unknown argument `order`")) {
+      // Fetch all products and sort manually
+      const allProducts = await prisma.product.findMany({
+        where: includeDrafts ? undefined : { isDraft: false },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          price: true,
+          imageUrl: true,
+          imageData: true,
+          brand: true,
+          stockQuantity: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+      
+      // Fetch order values using raw query
+      const orderData = await prisma.$queryRaw<Array<{ id: string; order: number }>>`
+        SELECT id, "order" FROM products
+      `;
+      const orderMap = new Map(orderData.map(p => [p.id, p.order ?? 0]));
+      
+      // Sort by order, then by createdAt
+      allProducts.sort((a, b) => {
+        const orderA = orderMap.get(a.id) ?? 0;
+        const orderB = orderMap.get(b.id) ?? 0;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
+      
+      products = allProducts.slice(0, limit);
+    } else {
+      throw error;
+    }
+  }
 
   return products.map((product) => ({
     id: product.id,
@@ -165,6 +251,8 @@ const cachedProductById = unstable_cache(
         returnPolicy: true,
         warranty: true,
         specifications: true,
+        isDraft: true,
+        order: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -198,6 +286,8 @@ const cachedProductById = unstable_cache(
       returnPolicy: product.returnPolicy ?? undefined,
       warranty: product.warranty ?? undefined,
       specifications: product.specifications ?? undefined,
+      isDraft: (product as any).isDraft ?? false,
+      order: (product as any).order ?? 0,
       createdAt: product.createdAt.getTime(),
       updatedAt: product.updatedAt.getTime(),
     };

@@ -41,7 +41,9 @@ export default function Navbar() {
 	const username = user?.username || null;
 	const userEmail = user?.email || null;
 	const userName = user?.name || null;
-	const isAuthed = userLoading ? null : isAuthenticated;
+	// Show authenticated state immediately if we have user data, even if still loading permissions
+	// This prevents showing "login/register" when user is actually logged in
+	const isAuthed = user ? true : (userLoading ? null : false);
 
 	const handleLogout = async () => {
 		await fetch("/api/auth/logout", { method: "POST" });

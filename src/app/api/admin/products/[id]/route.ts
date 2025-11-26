@@ -15,7 +15,7 @@ export async function PATCH(
   const { id } = await params;
   const body = await request.json().catch(() => null);
   
-  if (!body || typeof body.title !== "string" || typeof body.price !== "number") {
+  if (!body) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
@@ -75,10 +75,11 @@ export async function PATCH(
     }
     
     // Build update data object, only including fields that are provided
-    const updateData: any = {
-      title: body.title,
-      price: body.price,
-    };
+    const updateData: any = {};
+    
+    // Only set title and price if provided (use defaults if empty)
+    if (body.title !== undefined) updateData.title = body.title || "";
+    if (body.price !== undefined) updateData.price = body.price !== null && body.price !== "" ? Number(body.price) : 0;
     
     // Always update all fields that are in the request body (use null for empty values)
     // This ensures all fields are updated, not just the ones that changed
@@ -99,6 +100,7 @@ export async function PATCH(
     if ('returnPolicy' in body) updateData.returnPolicy = body.returnPolicy || null;
     if ('warranty' in body) updateData.warranty = body.warranty || null;
     if ('specifications' in body) updateData.specifications = body.specifications || null;
+    if ('isDraft' in body) updateData.isDraft = body.isDraft ?? false;
     
     // Handle image fields - if imageData is provided, use it; otherwise use imageUrl
     // CRITICAL: Only update image fields if explicitly provided to avoid accidentally clearing imageData
@@ -183,6 +185,7 @@ export async function PATCH(
         returnPolicy: product.returnPolicy ?? undefined,
         warranty: product.warranty ?? undefined,
         specifications: product.specifications ?? undefined,
+        isDraft: (product as any).isDraft ?? false,
         createdAt: product.createdAt.getTime(),
         updatedAt: product.updatedAt.getTime(),
       },

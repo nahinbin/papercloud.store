@@ -220,23 +220,9 @@ export default function EditProductPage() {
     setError(null);
     setSuccess(null);
 
-    if (!title || !price) {
-      setError("Title and price are required");
-      return;
-    }
-
-    if (selectedCatalogues.length === 0) {
-      setError("Please select at least one category");
-      return;
-    }
-
-    if (imageFiles.length === 0) {
-      setError("Please upload at least one product image");
-      return;
-    }
-
-    const numericPrice = Number(price);
-    if (Number.isNaN(numericPrice) || numericPrice < 0) {
+    // Only validate price format if provided, but allow empty
+    const numericPrice = price ? Number(price) : (product?.price || 0);
+    if (price && (Number.isNaN(numericPrice) || numericPrice < 0)) {
       setError("Price must be a valid number");
       return;
     }
@@ -317,8 +303,8 @@ export default function EditProductPage() {
 
       // Build request body - always include all fields, use null for empty values
       const requestBody: any = {
-        title,
-        price: numericPrice,
+        title: title || null,
+        price: price ? numericPrice : null,
         description: description || null,
         brand: brand || null,
         sku: sku || null,
@@ -326,7 +312,7 @@ export default function EditProductPage() {
         color: colorVariantsJson || null,
         tags: sizeVariantsJson || null,
         specifications: imagesJson || null, // Store all images as JSON in specifications
-        catalogueIds: selectedCatalogues, // Pass catalogue IDs
+        catalogueIds: selectedCatalogues, // Pass catalogue IDs (can be empty)
       };
 
       // Add image fields if provided
@@ -377,20 +363,19 @@ export default function EditProductPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Product Title <span className="text-red-500">*</span>
+                  Product Title
                 </label>
                 <input
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  required
                   placeholder="Enter product name"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Price <span className="text-red-500">*</span>
+                  Price
                 </label>
                 <input
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition"
@@ -399,7 +384,6 @@ export default function EditProductPage() {
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   inputMode="decimal"
-                  required
                   placeholder="0.00"
                 />
               </div>
@@ -408,7 +392,7 @@ export default function EditProductPage() {
             {/* Categories */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Categories <span className="text-red-500">*</span>
+                Categories
               </label>
               {loadingCatalogues ? (
                 <div className="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50">
@@ -478,7 +462,7 @@ export default function EditProductPage() {
             {/* Product Images - Multiple Upload */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Product Images <span className="text-red-500">*</span>
+                Product Images
               </label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition">
                 <input

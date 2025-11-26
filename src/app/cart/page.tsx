@@ -4,12 +4,19 @@ import { useCart } from "@/contexts/CartContext";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, getTotal, clearCart, isLoading } = useCart();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
-  if (isLoading) {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Prevent hydration mismatch by not rendering cart content until mounted
+  if (!mounted || isLoading) {
     return (
       <div className="min-h-screen w-full bg-gradient-to-b from-zinc-50 via-white to-white text-zinc-900">
         <div className="mx-auto max-w-4xl px-6 py-16">

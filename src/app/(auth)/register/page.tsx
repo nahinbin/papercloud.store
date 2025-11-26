@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { useUser } from "@/contexts/UserContext";
 
 // Username validation: only lowercase letters, numbers, and underscore
 const isValidUsername = (username: string): boolean => {
@@ -12,6 +13,7 @@ const isValidUsername = (username: string): boolean => {
 export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refreshUser } = useUser();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -158,8 +160,10 @@ export default function RegisterPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error || "Registration failed");
       }
+      // Refresh user context immediately after registration to update UI
+      await refreshUser();
+      // Then navigate to home
       router.push("/");
-      router.refresh();
     } catch (err: any) {
       setError(err?.message ?? "Registration failed");
     } finally {

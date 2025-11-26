@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from "react";
 
 export interface PublicUser {
   id: string;
@@ -25,8 +25,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<PublicUser | null>(null);
   const [permissions, setPermissions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const hasStartedLoadingRef = useRef(false);
 
   const refreshUser = useCallback(async () => {
+    // Set loading to true when manually refreshing (e.g., after login)
+    setIsLoading(true);
     try {
       const res = await fetch("/api/auth/me", {
         method: "GET",
@@ -34,6 +37,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
         headers: {
           "Content-Type": "application/json",
         },
+        // Add cache control to ensure fresh data from PostgreSQL
+        cache: "no-store",
       });
 
       if (res.ok) {
@@ -53,8 +58,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Start loading immediately on mount - don't wait for useEffect
   useEffect(() => {
-    refreshUser();
+    // Only start loading once
+    if (!hasStartedLoadingRef.current) {
+      hasStartedLoadingRef.current = true;
+      // Start the fetch immediately
+      refreshUser();
+    }
   }, [refreshUser]);
 
   return (

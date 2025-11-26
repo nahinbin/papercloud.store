@@ -7,7 +7,19 @@ import { prisma } from "@/lib/prisma";
 export const revalidate = 60; // Revalidate every 60 seconds
 
 export async function GET() {
-  const products = await listProducts();
+  const cookieStore = await cookies();
+  const token = cookieStore.get("session")?.value;
+  const user = await getUserBySessionToken(token);
+  const isAdmin = user && (user.isAdmin || user.username === "@admin" || user.username === "admin");
+  
+  // For admins, include drafts; for public, exclude drafts
+  let products;
+  if (isAdmin) {
+    products = await listProducts(true); // Include drafts for admins
+  } else {
+    products = await listProducts(false); // Exclude drafts for public
+  }
+  
   const response = NextResponse.json({ products });
   // Add caching headers
   response.headers.set(
@@ -30,7 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Only admins can create products" }, { status: 403 });
   }
   const body = await request.json().catch(() => null);
-  if (!body || typeof body.title !== "string" || typeof body.price !== "number") {
+  if (!body) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
   
@@ -57,8 +69,8 @@ export async function POST(request: Request) {
   }
   
   const product = await createProduct({
-    title: body.title,
-    price: body.price,
+    title: body.title || "",
+    price: body.price !== undefined && body.price !== null ? Number(body.price) : 0,
     description: body.description || undefined,
     imageUrl: body.imageUrl || undefined,
     imageData: imageData,
@@ -79,6 +91,7 @@ export async function POST(request: Request) {
     returnPolicy: body.returnPolicy || undefined,
     warranty: body.warranty || undefined,
     specifications: body.specifications || undefined,
+    isDraft: body.isDraft ?? false,
   });
 
   // Assign product to catalogues if catalogueIds are provided
