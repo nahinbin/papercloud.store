@@ -42,6 +42,7 @@ export default function EditProductPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loadingCatalogues, setLoadingCatalogues] = useState(true);
   const [originalPrimaryImageUrl, setOriginalPrimaryImageUrl] = useState<string | null>(null);
+  const [originalPrice, setOriginalPrice] = useState<number>(0);
 
   useEffect(() => {
     // Fetch product data and catalogues in parallel
@@ -60,6 +61,7 @@ export default function EditProductPage() {
         // Set basic fields
         setTitle(product.title || "");
         setPrice(product.price?.toString() || "");
+        setOriginalPrice(product.price ?? 0);
         setDescription(product.description || "");
         setBrand(product.brand || "");
         setSku(product.sku || "");
@@ -221,7 +223,7 @@ export default function EditProductPage() {
     setSuccess(null);
 
     // Only validate price format if provided, but allow empty
-    const numericPrice = price ? Number(price) : (product?.price || 0);
+    const numericPrice = price ? Number(price) : originalPrice;
     if (price && (Number.isNaN(numericPrice) || numericPrice < 0)) {
       setError("Price must be a valid number");
       return;
