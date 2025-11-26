@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 interface Coupon {
   id: string;
@@ -31,11 +30,10 @@ interface Product {
 }
 
 export default function CouponsPage() {
-  const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const { hasAccess, isChecking } = useAdminAccess(["coupons.view"]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -71,37 +69,7 @@ export default function CouponsPage() {
   });
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then(async (authRes) => {
-        if (authRes.ok) {
-          const authData = await authRes.json();
-          const user = authData.user;
-          const permissions = authData.permissions || [];
-          const admin = user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false;
-          setIsAdmin(admin);
-
-          const canViewCoupons = admin || permissions.includes("coupons.view");
-
-          if (!canViewCoupons) {
-            router.push("/admin/unauthorized");
-            return;
-          }
-
-          await Promise.all([fetchCoupons(), fetchProducts()]);
-        } else {
-          setIsAdmin(false);
-          router.push("/admin/unauthorized");
-        }
-      })
-      .catch(() => {
-        setIsAdmin(false);
-        router.push("/admin/unauthorized");
-      })
-      .finally(() => setLoading(false));
-  }, [router]);
-
-  const fetchCoupons = async () => {
+  const fetchCoupons = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/coupons", { cache: "no-store" });
       if (res.ok) {
@@ -110,22 +78,41 @@ export default function CouponsPage() {
       } else {
         setError("Failed to load coupons");
       }
-    } catch (err) {
+    } catch (error) {
+      console.error("Failed to load coupons:", error);
       setError("Failed to load coupons");
     }
-  };
+  }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const res = await fetch("/api/products");
       if (res.ok) {
         const data = await res.json();
         setProducts(data.products || []);
       }
-    } catch (err) {
-      console.error("Failed to load products:", err);
+    } catch (error) {
+      console.error("Failed to load products:", error);
     }
-  };
+  }, []);
+
+  const loadInitialData = useCallback(async () => {
+    setLoading(true);
+    try {
+      await Promise.all([fetchCoupons(), fetchProducts()]);
+    } catch (error) {
+      console.error("Failed to load coupons data:", error);
+      setError("Failed to load coupons data");
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchCoupons, fetchProducts]);
+
+  useEffect(() => {
+    if (hasAccess) {
+      loadInitialData();
+    }
+  }, [hasAccess, loadInitialData]);
 
   const resetForm = () => {
     const now = new Date();
@@ -203,7 +190,8 @@ export default function CouponsPage() {
         const data = await res.json();
         setError(data.error || "Failed to save coupon");
       }
-    } catch (err) {
+    } catch (error) {
+      console.error("Failed to save coupon:", error);
       setError("Failed to save coupon");
     }
   };
@@ -265,7 +253,7 @@ export default function CouponsPage() {
     coupon.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (loading || isAdmin === null) {
+  if (loading || isChecking || hasAccess === null) {
     return (
       <div className="min-h-screen w-full bg-white flex items-center justify-center">
         <p className="text-zinc-600">Loading...</p>
@@ -273,7 +261,7 @@ export default function CouponsPage() {
     );
   }
 
-  if (!isAdmin) {
+  if (!hasAccess) {
     return null;
   }
 

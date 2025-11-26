@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Product } from "@/types/product";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 export default function ProductsPage() {
-  const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  const { hasAccess, isChecking } = useAdminAccess(["products.view"]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,64 +16,35 @@ export default function ProductsPage() {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [isReordering, setIsReordering] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then(async (authRes) => {
-        if (authRes.ok) {
-          const authData = await authRes.json();
-          const user = authData.user;
-          const permissions = authData.permissions || [];
-          const admin = user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false;
-          setIsAdmin(admin);
-          
-          // Check permissions - now available from auth response
-          const canViewProducts = admin || permissions.includes("products.view");
-          setHasAccess(canViewProducts);
-          
-          if (!canViewProducts) {
-            router.push("/admin/unauthorized");
-            return;
-          }
-          
-          // Fetch products
-          fetch("/api/products")
-            .then(async (res) => {
-              if (res.ok) {
-                const data = await res.json();
-                // Sort by order to ensure correct display order
-                const sorted = (data.products || []).sort((a: Product, b: Product) => (a.order || 0) - (b.order || 0));
-                setProducts(sorted);
-              } else {
-                setError("Failed to load products");
-              }
-            })
-            .catch(() => setError("Failed to load products"))
-            .finally(() => setLoading(false));
-        } else {
-          setIsAdmin(false);
-          setHasAccess(false);
-          router.push("/admin/unauthorized");
-        }
-      })
-      .catch(() => {
-        setIsAdmin(false);
-        setHasAccess(false);
-        router.push("/admin/unauthorized");
-      });
-  }, [router]);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await fetch("/api/products");
       if (res.ok) {
         const data = await res.json();
         const sorted = (data.products || []).sort((a: Product, b: Product) => (a.order || 0) - (b.order || 0));
         setProducts(sorted);
+      } else {
+        setError("Failed to load products");
       }
     } catch {
       setError("Failed to load products");
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (hasAccess) {
+      fetchProducts();
+    }
+  }, [hasAccess, fetchProducts]);
+
+  useEffect(() => {
+    if (hasAccess === false) {
+      setLoading(false);
+    }
+  }, [hasAccess]);
 
   const handleDelete = async (productId: string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
@@ -83,11 +52,9 @@ export default function ProductsPage() {
     try {
       const res = await fetch(`/api/admin/products/${productId}`, { method: "DELETE" });
       if (res.ok) {
-        setProducts(products.filter(p => p.id !== productId));
-      } else {
-        alert("Failed to delete product");
+        setProducts((prev) => prev.filter((p) => p.id !== productId));
       }
-    } catch (err) {
+    } catch {
       alert("Failed to delete product");
     }
   };
@@ -97,32 +64,9 @@ export default function ProductsPage() {
     setDraggedId(id);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", id);
-    // Create a custom drag image for better visual feedback
-    if (e.currentTarget instanceof HTMLElement) {
-      // Find the parent card element
-      const cardElement = e.currentTarget.closest('[class*="rounded-2xl"]') as HTMLElement;
-      if (cardElement) {
-        const rect = cardElement.getBoundingClientRect();
-        const dragImage = cardElement.cloneNode(true) as HTMLElement;
-        dragImage.style.width = `${rect.width}px`;
-        dragImage.style.opacity = "0.9";
-        dragImage.style.transform = "rotate(3deg)";
-        dragImage.style.boxShadow = "0 20px 40px rgba(0,0,0,0.3)";
-        dragImage.style.pointerEvents = "none";
-        document.body.appendChild(dragImage);
-        dragImage.style.position = "absolute";
-        dragImage.style.top = "-1000px";
-        e.dataTransfer.setDragImage(dragImage, rect.width / 2, rect.height / 2);
-        setTimeout(() => {
-          if (document.body.contains(dragImage)) {
-            document.body.removeChild(dragImage);
-          }
-        }, 0);
-      }
-    }
   };
 
-  const handleDragEnd = (e: React.DragEvent) => {
+  const handleDragEnd = () => {
     setDraggedId(null);
     setDragOverId(null);
   };
@@ -192,7 +136,7 @@ export default function ProductsPage() {
         await fetchProducts();
         alert("Failed to update order. Please try again.");
       }
-    } catch (error) {
+    } catch {
       // Revert on error
       await fetchProducts();
       alert("Failed to update order. Please try again.");
@@ -202,7 +146,7 @@ export default function ProductsPage() {
     }
   };
 
-  if (loading || isAdmin === null || hasAccess === null) {
+  if (loading || isChecking || hasAccess === null) {
     return (
       <div className="min-h-screen w-full bg-white flex items-center justify-center">
         <p className="text-zinc-600">Loading...</p>
@@ -264,7 +208,7 @@ export default function ProductsPage() {
         )}
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {products.filter(p => p.id).map((product, index) => {
+          {products.filter((p) => p.id).map((product) => {
             const isDraft = product.isDraft ?? false;
             return (
             <div

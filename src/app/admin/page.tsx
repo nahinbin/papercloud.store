@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { LoadingPageShell, Skeleton } from "@/components/LoadingSkeletons";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 interface Stats {
   users: number;
@@ -42,60 +42,40 @@ function formatCurrency(amount: number): string {
 
 
 export default function AdminDashboard() {
-  const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
-  const [permissions, setPermissions] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { isAdmin, permissions, hasAccess, isChecking } = useAdminAccess(["dashboard.view"]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  const fetchData = async () => {
+  const fetchStats = useCallback(async () => {
+    setStatsLoading(true);
     try {
-      const [authRes, statsRes] = await Promise.all([
-        fetch("/api/auth/me"),
-        fetch("/api/admin/stats", { cache: "no-store" }),
-      ]);
-
-      if (authRes.ok) {
-        const authData = await authRes.json();
-        const user = authData.user;
-        const userPermissions = authData.permissions || [];
-        const admin = user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false;
-        setIsAdmin(admin);
-        
-        // Check permissions - now available from auth response
-        setPermissions(userPermissions);
-        // Check if user has dashboard.view permission or is admin
-        const canViewDashboard = admin || userPermissions.includes("dashboard.view");
-        setHasAccess(canViewDashboard);
-        
-        if (!canViewDashboard) {
-          router.push("/admin/unauthorized");
-          return;
-        }
-      } else {
-        setIsAdmin(false);
-        setHasAccess(false);
-        router.push("/admin/unauthorized");
-        return;
-      }
-
+      const statsRes = await fetch("/api/admin/stats", { cache: "no-store" });
       if (statsRes.ok) {
         const data = await statsRes.json();
         setStats(data.stats);
+      } else {
+        console.error("Failed to fetch stats");
       }
     } catch (error) {
-      console.error("Failed to fetch data:", error);
+      console.error("Failed to fetch stats:", error);
     } finally {
-      setLoading(false);
+      setStatsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [router]);
+    if (hasAccess) {
+      fetchStats();
+    }
+  }, [hasAccess, fetchStats]);
 
-  if (loading || isAdmin === null || hasAccess === null) {
+  useEffect(() => {
+    if (hasAccess === false) {
+      setStatsLoading(false);
+    }
+  }, [hasAccess]);
+
+  if (isChecking || statsLoading || hasAccess === null) {
     return (
       <LoadingPageShell title="Admin" subtitle="Loading dashboard" widthClassName="max-w-7xl">
         <div className="space-y-4 sm:space-y-6">
@@ -177,7 +157,7 @@ export default function AdminDashboard() {
                       <p className="text-lg font-bold text-zinc-900">{formatCurrency(stats.revenue.total)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-zinc-600 mb-1">Today's Revenue</p>
+                      <p className="text-xs text-zinc-600 mb-1">Today&apos;s Revenue</p>
                       <p className="text-lg font-bold text-zinc-900">{formatCurrency(stats.revenue.today)}</p>
                     </div>
                     <div>
@@ -208,7 +188,6 @@ export default function AdminDashboard() {
                   <h2 className="text-lg sm:text-xl font-semibold text-zinc-900">Products</h2>
                   <span className="text-2xl sm:text-3xl font-bold text-zinc-800">{stats.products}</span>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-600 mb-3 sm:mb-4">Total products in store</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-black hover:underline">
                   Manage Products
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,7 +201,6 @@ export default function AdminDashboard() {
                   <h2 className="text-lg sm:text-xl font-semibold text-zinc-500">Products</h2>
                   <span className="text-2xl sm:text-3xl font-bold text-zinc-400">{stats.products}</span>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-500 mb-3 sm:mb-4">Total products in store</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-zinc-400">
                   No Access
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -242,7 +220,6 @@ export default function AdminDashboard() {
                   <h2 className="text-lg sm:text-xl font-semibold text-zinc-900">Users</h2>
                   <span className="text-2xl sm:text-3xl font-bold text-zinc-800">{stats.users}</span>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-600 mb-3 sm:mb-4">Total registered users</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-black hover:underline">
                   Manage Users
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,7 +233,6 @@ export default function AdminDashboard() {
                   <h2 className="text-lg sm:text-xl font-semibold text-zinc-500">Users</h2>
                   <span className="text-2xl sm:text-3xl font-bold text-zinc-400">{stats.users}</span>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-500 mb-3 sm:mb-4">Total registered users</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-zinc-400">
                   No Access
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,7 +252,6 @@ export default function AdminDashboard() {
                   <h2 className="text-lg sm:text-xl font-semibold text-zinc-900">Orders</h2>
                   <span className="text-2xl sm:text-3xl font-bold text-zinc-800">{stats.orders}</span>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-600 mb-3 sm:mb-4">Total customer orders</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-black hover:underline">
                   Manage Orders
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,7 +265,6 @@ export default function AdminDashboard() {
                   <h2 className="text-lg sm:text-xl font-semibold text-zinc-500">Orders</h2>
                   <span className="text-2xl sm:text-3xl font-bold text-zinc-400">{stats.orders}</span>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-500 mb-3 sm:mb-4">Total customer orders</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-zinc-400">
                   No Access
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -312,7 +286,6 @@ export default function AdminDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-600 mb-3 sm:mb-4">Manage homepage banners</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-black hover:underline">
                   Manage Banners
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -328,7 +301,6 @@ export default function AdminDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-500 mb-3 sm:mb-4">Manage homepage banners</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-zinc-400">
                   No Access
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -350,7 +322,6 @@ export default function AdminDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-600 mb-3 sm:mb-4">Manage discount codes & promotions</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-black hover:underline">
                   Manage Coupons
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -366,7 +337,6 @@ export default function AdminDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-500 mb-3 sm:mb-4">Manage discount codes & promotions</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-zinc-400">
                   No Access
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -388,7 +358,6 @@ export default function AdminDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                   </svg>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-600 mb-3 sm:mb-4">Control the square category tiles</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-black hover:underline">
                   Manage Categories
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,8 +372,7 @@ export default function AdminDashboard() {
                   <svg className="h-5 w-5 sm:h-6 sm:w-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                   </svg>
-                </div>
-                <p className="text-xs sm:text-sm text-zinc-500 mb-3 sm:mb-4">Control the square category tiles</p>
+                  </div>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-zinc-400">
                   No Access
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -426,7 +394,6 @@ export default function AdminDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-600 mb-3 sm:mb-4">Manage custom roles and permissions</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-black hover:underline">
                   Manage Roles
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -442,7 +409,6 @@ export default function AdminDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-500 mb-3 sm:mb-4">Manage custom roles and permissions</p>
                 <div className="flex items-center text-xs sm:text-sm font-medium text-zinc-400">
                   No Access
                   <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

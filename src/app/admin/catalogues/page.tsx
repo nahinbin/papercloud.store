@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 interface Catalogue {
   id: string;
@@ -27,8 +27,7 @@ interface ProductOption {
 }
 
 export default function CataloguePage() {
-  const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const { hasAccess, isChecking } = useAdminAccess(["catalogues.view"]);
   const [catalogues, setCatalogues] = useState<Catalogue[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -53,38 +52,7 @@ export default function CataloguePage() {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [isReordering, setIsReordering] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then(async (authRes) => {
-        if (authRes.ok) {
-          const authData = await authRes.json();
-          const user = authData.user;
-          const permissions = authData.permissions || [];
-          const admin = user?.isAdmin || user?.username === "@admin" || user?.username === "admin" || false;
-          setIsAdmin(admin);
-          
-          // Check permissions - now available from auth response
-          const canViewCatalogues = admin || permissions.includes("catalogues.view");
-          
-          if (!canViewCatalogues) {
-            router.push("/admin/unauthorized");
-            return;
-          }
-          
-          await Promise.all([fetchCatalogues(), fetchProducts()]);
-        } else {
-          setIsAdmin(false);
-          router.push("/admin/unauthorized");
-        }
-      })
-      .catch(() => {
-        setIsAdmin(false);
-        router.push("/admin/unauthorized");
-      })
-      .finally(() => setLoading(false));
-  }, [router]);
-
-  const fetchCatalogues = async () => {
+  const fetchCatalogues = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/admin/catalogues");
@@ -101,9 +69,9 @@ export default function CataloguePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setLoadingProducts(true);
       const res = await fetch("/api/admin/catalogues/products");
@@ -114,7 +82,22 @@ export default function CataloguePage() {
     } finally {
       setLoadingProducts(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (hasAccess) {
+      Promise.all([fetchCatalogues(), fetchProducts()]).catch((err) => {
+        console.error("Failed to load catalogue data", err);
+      });
+    }
+  }, [hasAccess, fetchCatalogues, fetchProducts]);
+
+  useEffect(() => {
+    if (hasAccess === false) {
+      setLoading(false);
+      setLoadingProducts(false);
+    }
+  }, [hasAccess]);
 
   const resetForm = () => {
     setForm({
@@ -238,32 +221,9 @@ export default function CataloguePage() {
     setDraggedId(id);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", id);
-    // Create a custom drag image for better visual feedback
-    if (e.currentTarget instanceof HTMLElement) {
-      // Find the parent card element
-      const cardElement = e.currentTarget.closest('[class*="rounded-2xl"]') as HTMLElement;
-      if (cardElement) {
-        const rect = cardElement.getBoundingClientRect();
-        const dragImage = cardElement.cloneNode(true) as HTMLElement;
-        dragImage.style.width = `${rect.width}px`;
-        dragImage.style.opacity = "0.9";
-        dragImage.style.transform = "rotate(3deg)";
-        dragImage.style.boxShadow = "0 20px 40px rgba(0,0,0,0.3)";
-        dragImage.style.pointerEvents = "none";
-        document.body.appendChild(dragImage);
-        dragImage.style.position = "absolute";
-        dragImage.style.top = "-1000px";
-        e.dataTransfer.setDragImage(dragImage, rect.width / 2, rect.height / 2);
-        setTimeout(() => {
-          if (document.body.contains(dragImage)) {
-            document.body.removeChild(dragImage);
-          }
-        }, 0);
-      }
-    }
   };
 
-  const handleDragEnd = (e: React.DragEvent) => {
+  const handleDragEnd = () => {
     setDraggedId(null);
     setDragOverId(null);
   };
@@ -333,7 +293,7 @@ export default function CataloguePage() {
         await fetchCatalogues();
         alert("Failed to update order. Please try again.");
       }
-    } catch (error) {
+    } catch {
       // Revert on error
       await fetchCatalogues();
       alert("Failed to update order. Please try again.");
@@ -343,7 +303,7 @@ export default function CataloguePage() {
     }
   };
 
-  if (loading || isAdmin === null) {
+  if (loading || isChecking || hasAccess === null) {
     return (
       <div className="min-h-screen w-full bg-white flex items-center justify-center">
         <p className="text-zinc-600">Loading...</p>
@@ -351,7 +311,7 @@ export default function CataloguePage() {
     );
   }
 
-  if (!isAdmin) {
+  if (!hasAccess) {
     return null;
   }
 

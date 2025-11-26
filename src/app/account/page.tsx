@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import Gravatar from "@/components/Gravatar";
 import { useUser } from "@/contexts/UserContext";
 
@@ -57,6 +58,13 @@ interface Order {
   updatedAt: string;
 }
 
+interface SavedProduct {
+  id: string;
+  title: string;
+  price: number;
+  imageUrl?: string | null;
+}
+
 type Tab = "profile" | "orders" | "addresses" | "saved";
 
 export default function AccountPage() {
@@ -95,12 +103,15 @@ export default function AccountPage() {
 
   const [editingAddress, setEditingAddress] = useState<string | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
-  const [savedProducts, setSavedProducts] = useState<any[]>([]);
+  const [savedProducts, setSavedProducts] = useState<SavedProduct[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [ordersLoaded, setOrdersLoaded] = useState(false);
+  const [addressesLoaded, setAddressesLoaded] = useState(false);
+  const [savedLoaded, setSavedLoaded] = useState(false);
 
   // Check auth and load full user profile
   useEffect(() => {
@@ -152,91 +163,100 @@ export default function AccountPage() {
     loadUserProfile();
   }, [contextUser, isAuthenticated, userLoading, router]);
 
+  const fetchOrders = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (!silent) {
+      setLoadingOrders(true);
+    }
+    try {
+      const res = await fetch("/api/account/orders");
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data.orders || []);
+      }
+    } catch (error) {
+      console.error("Failed to load orders:", error);
+    } finally {
+      if (!silent) {
+        setLoadingOrders(false);
+      }
+      setOrdersLoaded(true);
+    }
+  }, []);
+
+  const fetchSavedProducts = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (!silent) {
+      setLoadingSaved(true);
+    }
+    try {
+      const res = await fetch("/api/account/saved-products");
+      if (res.ok) {
+        const data = await res.json();
+        setSavedProducts(data.products || []);
+      }
+    } catch (error) {
+      console.error("Failed to load saved products:", error);
+    } finally {
+      if (!silent) {
+        setLoadingSaved(false);
+      }
+      setSavedLoaded(true);
+    }
+  }, []);
+
+  const fetchAddresses = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (!silent) {
+      setLoadingAddresses(true);
+    }
+    try {
+      const res = await fetch("/api/account/addresses");
+      if (res.ok) {
+        const data = await res.json();
+        setAddresses(data.addresses || []);
+      }
+    } catch (error) {
+      console.error("Failed to load addresses:", error);
+    } finally {
+      if (!silent) {
+        setLoadingAddresses(false);
+      }
+      setAddressesLoaded(true);
+    }
+  }, []);
+
+  const loadData = useCallback(async () => {
+    if (!user) return;
+
+    if (activeTab === "profile") {
+      const promises: Promise<void>[] = [];
+      if (!ordersLoaded) {
+        promises.push(fetchOrders({ silent: true }));
+      }
+      if (!savedLoaded) {
+        promises.push(fetchSavedProducts({ silent: true }));
+      }
+      if (promises.length) {
+        await Promise.all(promises);
+      }
+    } else if (activeTab === "addresses") {
+      if (!addressesLoaded) {
+        await fetchAddresses();
+      }
+    } else if (activeTab === "orders") {
+      if (!ordersLoaded) {
+        await fetchOrders();
+      }
+    } else if (activeTab === "saved") {
+      if (!savedLoaded) {
+        await fetchSavedProducts();
+      }
+    }
+  }, [activeTab, addressesLoaded, fetchAddresses, fetchOrders, fetchSavedProducts, ordersLoaded, savedLoaded, user]);
+
   useEffect(() => {
     if (user) {
       loadData();
     }
-  }, [user, activeTab]);
-
-  const loadData = async () => {
-    if (activeTab === "profile") {
-      // Load orders and saved products in parallel for profile tab stats
-      if (orders.length === 0 || savedProducts.length === 0) {
-        const promises: Promise<void>[] = [];
-        
-        if (orders.length === 0) {
-          promises.push(
-            fetch("/api/account/orders")
-              .then(async (res) => {
-                if (res.ok) {
-                  const data = await res.json();
-                  setOrders(data.orders || []);
-                }
-              })
-              .catch((error) => {
-                console.error("Failed to load orders:", error);
-              })
-          );
-        }
-        
-        if (savedProducts.length === 0) {
-          promises.push(
-            fetch("/api/account/saved-products")
-              .then(async (res) => {
-                if (res.ok) {
-                  const data = await res.json();
-                  setSavedProducts(data.products || []);
-                }
-              })
-              .catch((error) => {
-                console.error("Failed to load saved products:", error);
-              })
-          );
-        }
-        
-        await Promise.all(promises);
-      }
-    } else if (activeTab === "addresses") {
-      setLoadingAddresses(true);
-      try {
-        const res = await fetch("/api/account/addresses");
-        if (res.ok) {
-          const data = await res.json();
-          setAddresses(data.addresses || []);
-        }
-      } catch (error) {
-        console.error("Failed to load addresses:", error);
-      } finally {
-        setLoadingAddresses(false);
-      }
-    } else if (activeTab === "orders") {
-      setLoadingOrders(true);
-      try {
-        const res = await fetch("/api/account/orders");
-        if (res.ok) {
-          const data = await res.json();
-          setOrders(data.orders || []);
-        }
-      } catch (error) {
-        console.error("Failed to load orders:", error);
-      } finally {
-        setLoadingOrders(false);
-      }
-    } else if (activeTab === "saved") {
-      setLoadingSaved(true);
-      try {
-        const res = await fetch("/api/account/saved-products");
-        if (res.ok) {
-          const data = await res.json();
-          setSavedProducts(data.products || []);
-        }
-      } catch (error) {
-        console.error("Failed to load saved products:", error);
-      } finally {
-        setLoadingSaved(false);
-      }
-    }
-  };
+  }, [user, loadData]);
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,7 +265,7 @@ export default function AccountPage() {
     setSuccess(null);
 
     try {
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
       if (profileForm.name !== user?.name) updateData.name = profileForm.name;
       if (profileForm.email !== user?.email) updateData.email = profileForm.email;
       if (profileForm.phone !== user?.phone) updateData.phone = profileForm.phone;
@@ -276,8 +296,8 @@ export default function AccountPage() {
       });
       setSuccess("Profile updated successfully!");
       setTimeout(() => setSuccess(null), 3000);
-    } catch (error: any) {
-      setError(error.message || "Failed to update profile");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to update profile");
     } finally {
       setSaving(false);
     }
@@ -323,9 +343,10 @@ export default function AccountPage() {
       setShowAddressForm(false);
       setSuccess(editingAddress ? "Address updated!" : "Address saved!");
       setTimeout(() => setSuccess(null), 3000);
+      setAddressesLoaded(false);
       await loadData();
-    } catch (error: any) {
-      setError(error.message || "Failed to save address");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to save address");
     } finally {
       setSaving(false);
     }
@@ -347,9 +368,10 @@ export default function AccountPage() {
 
       setSuccess("Address deleted!");
       setTimeout(() => setSuccess(null), 3000);
+      setAddressesLoaded(false);
       loadData();
-    } catch (error: any) {
-      setError(error.message || "Failed to delete address");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to delete address");
     }
   };
 
@@ -395,7 +417,7 @@ export default function AccountPage() {
         setSuccess("Product removed from saved items");
         setTimeout(() => setSuccess(null), 3000);
       }
-    } catch (error) {
+    } catch {
       setError("Failed to remove product");
     }
   };
@@ -713,7 +735,7 @@ export default function AccountPage() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
               </div>
             ) : orders.length === 0 ? (
-              <p className="text-zinc-600">You haven't placed any orders yet.</p>
+              <p className="text-zinc-600">You haven&apos;t placed any orders yet.</p>
             ) : (
               <div className="space-y-4">
                 {orders.map((order) => (
@@ -996,7 +1018,7 @@ export default function AccountPage() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
               </div>
             ) : savedProducts.length === 0 ? (
-              <p className="text-zinc-600">You haven't saved any products yet.</p>
+              <p className="text-zinc-600">You haven&apos;t saved any products yet.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {savedProducts.map((product) => (
@@ -1006,10 +1028,13 @@ export default function AccountPage() {
                   >
                     <Link href={`/products/${product.id}`} className="block">
                       {product.imageUrl && (
-                        <img
+                        <Image
                           src={product.imageUrl}
                           alt={product.title}
+                          width={600}
+                          height={400}
                           className="w-full h-48 object-cover"
+                          unoptimized
                         />
                       )}
                       <div className="p-4">
