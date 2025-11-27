@@ -1,3 +1,4 @@
+import path from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -35,6 +36,7 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["@vercel/speed-insights"],
     optimizeCss: true, // Optimize CSS output
   },
+  outputFileTracingRoot: path.join(__dirname), // Force file tracing to stay inside the project root
   // Optimize production builds
   productionBrowserSourceMaps: false, // Disable source maps in production for faster builds
 };
