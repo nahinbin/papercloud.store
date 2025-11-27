@@ -197,7 +197,11 @@ export async function POST(request: Request) {
     existingItems
       .filter((item) => !incomingProductIds.has(item.productId))
       .forEach((item) => {
-        operations.push(prisma.cartItem.delete({ where: { id: item.id } }));
+        operations.push(
+          prisma.cartItem.deleteMany({
+            where: { id: item.id },
+          })
+        );
       });
 
     // Execute all operations

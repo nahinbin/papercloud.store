@@ -1,6 +1,4 @@
 "use server";
-
-import SibApiV3Sdk from "sib-api-v3-sdk";
 import type { Order, OrderItem } from "@prisma/client";
 
 interface EmailPayload {
@@ -18,23 +16,8 @@ function getBaseUrl() {
   return process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:3000";
 }
 
-let transactionalClient: SibApiV3Sdk.TransactionalEmailsApi | null = null;
-
-function getTransactionalClient() {
-  if (!isEmailConfigured()) return null;
-
-  if (!transactionalClient) {
-    const client = SibApiV3Sdk.ApiClient.instance;
-    client.authentications["api-key"].apiKey = process.env.BREVO_API_KEY!;
-    transactionalClient = new SibApiV3Sdk.TransactionalEmailsApi();
-  }
-
-  return transactionalClient;
-}
-
 async function dispatchEmail(payload: EmailPayload) {
-  const client = getTransactionalClient();
-  if (!client) {
+  if (!isEmailConfigured()) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[email] Brevo is not configured. Skipping email:", payload.subject);
     }
@@ -42,16 +25,30 @@ async function dispatchEmail(payload: EmailPayload) {
   }
 
   try {
-    await client.sendTransacEmail({
-      sender: {
-        email: process.env.BREVO_SENDER_EMAIL!,
-        name: process.env.BREVO_SENDER_NAME || "PaperCloud",
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        accept: "application/json",
+        "api-key": process.env.BREVO_API_KEY!,
       },
-      to: [{ email: payload.to }],
-      subject: payload.subject,
-      htmlContent: payload.html,
-      textContent: payload.text,
+      body: JSON.stringify({
+        sender: {
+          email: process.env.BREVO_SENDER_EMAIL!,
+          name: process.env.BREVO_SENDER_NAME || "PaperCloud",
+        },
+        to: [{ email: payload.to }],
+        subject: payload.subject,
+        htmlContent: payload.html,
+        textContent: payload.text,
+      }),
+      cache: "no-store",
     });
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => undefined);
+      throw new Error(`Brevo responded with ${response.status}: ${errorBody || response.statusText}`);
+    }
   } catch (error) {
     console.error("[email] Failed to send email", {
       subject: payload.subject,
