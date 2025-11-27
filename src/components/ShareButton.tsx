@@ -7,9 +7,18 @@ interface ShareButtonProps {
   title: string;
   description?: string;
   className?: string;
+  iconOnly?: boolean;
+  variant?: "solid" | "ghost" | "minimal";
 }
 
-export default function ShareButton({ url, title, description, className = "" }: ShareButtonProps) {
+export default function ShareButton({
+  url,
+  title,
+  description,
+  className = "",
+  iconOnly = false,
+  variant = "solid",
+}: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
 
@@ -80,28 +89,55 @@ export default function ShareButton({ url, title, description, className = "" }:
     setShowShareMenu(false);
   };
 
+  const isGhost = variant === "ghost";
+  const isMinimal = variant === "minimal";
+  const buttonBaseClasses = iconOnly
+    ? `${
+        isMinimal
+          ? "flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-600 shadow-sm hover:bg-zinc-50"
+          : isGhost
+          ? "h-12 w-12 rounded-2xl border border-zinc-200 bg-white/80 text-zinc-600 hover:border-zinc-400 hover:bg-white"
+          : "h-12 w-12 rounded-2xl bg-black text-white hover:bg-zinc-800"
+      }`
+    : `${
+        isMinimal
+          ? "flex items-center justify-center gap-2 rounded-full bg-transparent px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100"
+          : isGhost
+          ? "flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white/80 px-4 py-2 text-sm font-medium text-zinc-700 hover:border-zinc-400 hover:bg-white"
+          : "flex items-center justify-center gap-2 rounded-2xl bg-black px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+      }`;
+
+  const buttonClasses = `${buttonBaseClasses} transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2`.trim();
+  const wrapperClasses = `relative ${className}`.trim();
+
   return (
-    <div className={`relative ${className}`}>
+    <div className={wrapperClasses}>
       <button
         onClick={handleShare}
-        className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-black text-white hover:bg-zinc-800 transition-colors text-sm font-medium w-full sm:w-auto"
+        type="button"
+        className={`${buttonClasses} ${iconOnly ? "relative w-12" : "w-full sm:w-auto"}`}
         aria-label="Share product"
+        title={copied ? "Link copied" : "Share product"}
       >
-        <svg
-          className="h-5 w-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-          />
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="7" cy="12" r="2.25" strokeWidth={1.8} />
+          <circle cx="17" cy="6.5" r="2.25" strokeWidth={1.8} />
+          <circle cx="17" cy="17.5" r="2.25" strokeWidth={1.8} />
+          <path strokeWidth={1.8} strokeLinecap="round" d="M8.9 10.8l5.2-3" />
+          <path strokeWidth={1.8} strokeLinecap="round" d="M8.9 13.2l5.2 3.1" />
         </svg>
-        {copied ? "Copied!" : "Share"}
+        {iconOnly ? (
+          <>
+            <span className="sr-only">{copied ? "Link copied" : "Share product"}</span>
+            {copied && (
+              <span className="pointer-events-none absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-black px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-lg">
+                Copied
+              </span>
+            )}
+          </>
+        ) : (
+          <span>{copied ? "Copied!" : "Share"}</span>
+        )}
       </button>
 
       {/* Share Menu Dropdown */}

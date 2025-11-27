@@ -22,23 +22,24 @@ export default function ProductVariants({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Color Variants */}
       {colorVariants && colorVariants.length > 0 && (
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Color {selectedColor && <span className="text-gray-500 font-normal">({selectedColor})</span>}
+          <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.35em] text-zinc-500">
+            Color {selectedColor && <span className="ml-2 text-zinc-400 normal-case tracking-normal">({selectedColor})</span>}
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             {colorVariants.map((color) => (
               <button
                 key={color}
                 type="button"
                 onClick={() => onColorSelect?.(color)}
-                className={`px-4 py-2 rounded-lg border-2 font-medium transition ${
+                aria-pressed={selectedColor === color}
+                className={`rounded-full border px-4 py-2 text-sm font-medium tracking-tight transition ${
                   selectedColor === color
-                    ? "border-black bg-black text-white"
-                    : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                    ? "border-black bg-black text-white shadow-[0_15px_30px_rgba(15,23,42,0.25)]"
+                    : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400"
                 }`}
               >
                 {color}
@@ -51,19 +52,20 @@ export default function ProductVariants({
       {/* Size Variants */}
       {sizeVariants && sizeVariants.length > 0 && (
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Size {selectedSize && <span className="text-gray-500 font-normal">({selectedSize})</span>}
+          <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.35em] text-zinc-500">
+            Size {selectedSize && <span className="ml-2 text-zinc-400 normal-case tracking-normal">({selectedSize})</span>}
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             {sizeVariants.map((size) => (
               <button
                 key={size}
                 type="button"
                 onClick={() => onSizeSelect?.(size)}
-                className={`px-4 py-2 rounded-lg border-2 font-medium transition min-w-[3rem] ${
+                aria-pressed={selectedSize === size}
+                className={`min-w-[3rem] rounded-full border px-4 py-2 text-sm font-semibold tracking-tight transition ${
                   selectedSize === size
-                    ? "border-black bg-black text-white"
-                    : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                    ? "border-black bg-black text-white shadow-[0_15px_30px_rgba(15,23,42,0.25)]"
+                    : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400"
                 }`}
               >
                 {size}

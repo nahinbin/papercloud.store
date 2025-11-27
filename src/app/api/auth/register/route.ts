@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSession, createUser } from "@/lib/authDb";
+import { sendWelcomeEmail } from "@/lib/email";
 
 // Username validation: only lowercase letters, numbers, and underscore
 function isValidUsername(username: string): boolean {
@@ -26,6 +27,14 @@ export async function POST(request: Request) {
       password: body.password,
       email: typeof body.email === "string" ? body.email : undefined,
     });
+    if (user.email) {
+      sendWelcomeEmail({
+        to: user.email,
+        name: user.name ?? user.username,
+      }).catch((error) => {
+        console.error("Failed to send welcome email", error);
+      });
+    }
     const token = await createSession(user.id);
     const res = NextResponse.json({ user });
     res.cookies.set("session", token, {

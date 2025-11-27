@@ -6,9 +6,16 @@ import { useRouter } from "next/navigation";
 interface SaveProductButtonProps {
   productId: string;
   className?: string;
+  variant?: "default" | "minimal";
+  size?: "md" | "sm";
 }
 
-export default function SaveProductButton({ productId, className = "" }: SaveProductButtonProps) {
+export default function SaveProductButton({
+  productId,
+  className = "",
+  variant = "default",
+  size = "md",
+}: SaveProductButtonProps) {
   const router = useRouter();
   const [isSaved, setIsSaved] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -63,14 +70,22 @@ export default function SaveProductButton({ productId, className = "" }: SavePro
     return null;
   }
 
+  const sizeClasses = size === "sm" ? "h-10 w-10" : "h-12 w-12";
+  const isMinimal = variant === "minimal";
+  const baseClasses = isMinimal ? "rounded-full border" : "rounded-lg border";
+  const unsavedClasses = isMinimal
+    ? "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+    : "border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-50 hover:border-zinc-400";
+  const savedClasses = isMinimal
+    ? "border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100"
+    : "border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300";
+
   return (
     <button
       onClick={handleToggleSave}
       disabled={loading}
-      className={`inline-flex items-center justify-center w-12 h-12 rounded-lg border transition-all ${
-        isSaved
-          ? "border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300"
-          : "border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-50 hover:border-zinc-400"
+      className={`inline-flex items-center justify-center transition-all ${sizeClasses} ${baseClasses} ${
+        isSaved ? savedClasses : unsavedClasses
       } disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       title={isSaved ? "Remove from saved" : "Save product"}
     >
@@ -83,7 +98,7 @@ export default function SaveProductButton({ productId, className = "" }: SavePro
           />
         </svg>
       ) : (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.6}>
           <path
             strokeLinecap="round"
             strokeLinejoin="round"

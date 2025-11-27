@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getUserBySessionToken } from "@/lib/authDb";
+import { getUserBySessionToken, hashPassword } from "@/lib/authDb";
 import { prisma } from "@/lib/prisma";
-import crypto from "crypto";
-
-function hashPassword(password: string): string {
-  return crypto.createHash("sha256").update(password).digest("hex");
-}
 
 export async function GET() {
   const cookieStore = await cookies();

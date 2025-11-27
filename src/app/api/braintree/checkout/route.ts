@@ -4,6 +4,7 @@ import * as braintree from "braintree";
 import { prisma } from "@/lib/prisma";
 import { getUserBySessionToken } from "@/lib/authDb";
 import { applyCoupon } from "@/lib/couponDb";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 
 function getGateway() {
   return new braintree.BraintreeGateway({
@@ -165,6 +166,15 @@ export async function POST(request: Request) {
         }
       }
     }
+
+    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || new URL(request.url).origin;
+    sendOrderConfirmationEmail({
+      to: order.email,
+      order,
+      orderUrl: `${appBaseUrl}/order-confirmation/${order.id}`,
+    }).catch((error) => {
+      console.error("Failed to send order confirmation email", error);
+    });
 
     return NextResponse.json({
       success: true,

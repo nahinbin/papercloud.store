@@ -22,9 +22,9 @@ export default function ProductImageGallery({ images, productTitle }: ProductIma
   const currentImage = images[selectedImageIndex];
 
   return (
-    <div className="sticky top-8">
+    <div className="space-y-4 lg:sticky lg:top-8">
       {/* Main Image */}
-      <div className="relative w-full aspect-square mb-4 rounded-lg border shadow-sm overflow-hidden bg-gray-50">
+      <div className="relative w-full aspect-square sm:aspect-[7/8] lg:aspect-[6/7] xl:aspect-[7/8] 2xl:aspect-[8/9] rounded-3xl border border-zinc-200 bg-white shadow-[0_20px_80px_rgba(15,23,42,0.08)] overflow-hidden">
         <Image
           src={currentImage}
           alt={`${productTitle} - Image ${selectedImageIndex + 1}`}
@@ -63,28 +63,52 @@ export default function ProductImageGallery({ images, productTitle }: ProductIma
 
       {/* Thumbnail Gallery */}
       {images.length > 1 && (
-        <div className="grid grid-cols-4 gap-2">
-          {images.map((image, index) => (
-            <button
-              key={index}
-              onClick={() => setSelectedImageIndex(index)}
-              className={`relative aspect-square rounded-lg border-2 overflow-hidden transition ${
-                selectedImageIndex === index
-                  ? "border-black ring-2 ring-black ring-offset-2"
-                  : "border-gray-200 hover:border-gray-400"
-              }`}
-              aria-label={`View image ${index + 1}`}
-            >
-              <Image
-                src={image}
-                alt={`${productTitle} thumbnail ${index + 1}`}
-                fill
-                className="object-cover"
-                sizes="(min-width: 1024px) 12.5vw, 25vw"
-              />
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="hidden md:grid grid-cols-4 gap-3">
+            {images.map((image, index) => (
+              <button
+                key={index}
+                onClick={() => setSelectedImageIndex(index)}
+                className={`relative aspect-square rounded-2xl border-2 overflow-hidden transition ${
+                  selectedImageIndex === index
+                    ? "border-black ring-2 ring-black ring-offset-2"
+                    : "border-zinc-200 hover:border-zinc-400"
+                }`}
+                aria-label={`View image ${index + 1}`}
+              >
+                <Image
+                  src={image}
+                  alt={`${productTitle} thumbnail ${index + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 1024px) 12.5vw, 25vw"
+                />
+              </button>
+            ))}
+          </div>
+          <div className="md:hidden flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+            {images.map((image, index) => (
+              <button
+                key={`mobile-${index}`}
+                onClick={() => setSelectedImageIndex(index)}
+                className={`relative h-16 w-16 flex-shrink-0 rounded-2xl border-2 overflow-hidden transition ${
+                  selectedImageIndex === index
+                    ? "border-black"
+                    : "border-zinc-200 hover:border-zinc-400"
+                }`}
+                aria-label={`View image ${index + 1}`}
+              >
+                <Image
+                  src={image}
+                  alt={`${productTitle} thumbnail ${index + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="25vw"
+                />
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
