@@ -19,6 +19,7 @@ model User {
   email        String?
   phone        String?
   isAdmin      Boolean           @default(false) @map("is_admin")
+  emailVerifiedAt DateTime?      @map("email_verified_at")
   createdAt    DateTime          @default(now()) @map("created_at")
   updatedAt    DateTime          @default(now()) @updatedAt @map("updated_at")
   sessions     Session[]
@@ -28,6 +29,7 @@ model User {
   cart         Cart?
   savedProducts SavedProduct[]
   passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
 
   @@index([googleId])
   @@map("users")
@@ -312,6 +314,42 @@ model PasswordResetToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  pendingRegistrationId String? @map("pending_registration_id")
+  token     String   @unique
+  otp       String?  // OTP code for email verification
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pendingRegistration PendingRegistration? @relation(fields: [pendingRegistrationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([pendingRegistrationId])
+  @@index([expiresAt])
+  @@index([otp])
+  @@map("email_verification_tokens")
+}
+
+model PendingRegistration {
+  id        String   @id @default(cuid())
+  name      String?
+  username  String   @unique
+  passwordHash String @map("password_hash")
+  email     String
+  otp       String
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  emailVerificationTokens EmailVerificationToken[]
+
+  @@index([email])
+  @@index([username])
+  @@index([expiresAt])
+  @@map("pending_registrations")
 }
 
 model Coupon {

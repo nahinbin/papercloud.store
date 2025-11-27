@@ -20,6 +20,11 @@ async function dispatchEmail(payload: EmailPayload) {
   if (!isEmailConfigured()) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[email] Brevo is not configured. Skipping email:", payload.subject);
+      // Extract OTP from email content for development
+      const otpMatch = payload.text.match(/OTP Code: (\d{6})/);
+      if (otpMatch) {
+        console.log(`[DEV] ⚠️  OTP Code (email not configured): ${otpMatch[1]}`);
+      }
     }
     return;
   }
@@ -186,6 +191,75 @@ export async function sendOrderConfirmationEmail(options: { to: string; order: O
     ...order.items.map((item) => `• ${item.productTitle} × ${item.quantity} (${formatCurrency(item.productPrice)})`),
     "",
     orderUrl ? `View your order: ${orderUrl}` : "",
+  ].join("\n");
+
+  await dispatchEmail({ to: options.to, subject, html, text });
+}
+
+export async function sendEmailVerificationEmail(options: { to: string; name?: string | null; verifyUrl: string; expiresAt: Date }) {
+  const subject = "Verify your PaperCloud email";
+  const expires = options.expiresAt.toLocaleString();
+
+  const html = `
+    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #0a0a0a; line-height: 1.5;">
+      <h1 style="font-size: 24px; margin-bottom: 16px;">Confirm your email address</h1>
+      <p>Hello ${escapeHtml(options.name || "there")},</p>
+      <p>Thanks for signing up to PaperCloud. Please confirm that this is your email address by clicking the button below.</p>
+      <p style="margin: 24px 0;">
+        <a href="${options.verifyUrl}" style="background: #111827; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none;">Verify email</a>
+      </p>
+      <p>This link will expire on <strong>${expires}</strong>. If you didn&apos;t create an account, you can ignore this email.</p>
+    </div>
+  `;
+
+  const text = [
+    "Confirm your email address",
+    "",
+    `Verification link: ${options.verifyUrl}`,
+    `Expires: ${expires}`,
+    "",
+    "If you didn't create an account, you can ignore this email.",
+  ].join("\n");
+
+  await dispatchEmail({ to: options.to, subject, html, text });
+}
+
+export async function sendEmailVerificationOTP(options: { to: string; name?: string | null; otp: string; expiresAt: Date }) {
+  const subject = "Verify your PaperCloud email";
+  const expires = options.expiresAt.toLocaleString();
+
+  const html = `
+    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #0a0a0a; line-height: 1.5;">
+      <h1 style="font-size: 24px; margin-bottom: 16px;">Verify your email address</h1>
+      <p>Hello ${escapeHtml(options.name || "there")},</p>
+      <p>Thanks for signing up to PaperCloud. Please verify your email address using the OTP code below:</p>
+      <div style="margin: 32px 0; text-align: center;">
+        <div style="background: #f3f4f6; border: 2px solid #111827; border-radius: 12px; padding: 20px; display: inline-block;">
+          <p style="font-size: 36px; font-weight: bold; letter-spacing: 8px; margin: 0; color: #111827; font-family: 'Courier New', monospace;">
+            ${options.otp}
+          </p>
+        </div>
+      </div>
+      <p style="margin-top: 24px;">Enter this code on the verification page to complete your registration.</p>
+      <p style="margin-top: 16px; font-size: 14px; color: #6b7280;">This code will expire on <strong>${expires}</strong>.</p>
+      <p style="margin-top: 24px; font-size: 12px; color: #6b7280;">If you didn&apos;t create an account, you can ignore this email.</p>
+    </div>
+  `;
+
+  const text = [
+    "Verify your email address",
+    "",
+    `Hello ${options.name || "there"},`,
+    "",
+    "Thanks for signing up to PaperCloud. Please verify your email address using the OTP code below:",
+    "",
+    `OTP Code: ${options.otp}`,
+    "",
+    "Enter this code on the verification page to complete your registration.",
+    "",
+    `This code will expire on ${expires}.`,
+    "",
+    "If you didn't create an account, you can ignore this email.",
   ].join("\n");
 
   await dispatchEmail({ to: options.to, subject, html, text });

@@ -47,8 +47,14 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+        // Check if email verification is required
+        if (data.requiresVerification && data.userId && data.email) {
+          // Redirect to verification page
+          router.push(`/verify-email-otp?userId=${encodeURIComponent(data.userId)}&email=${encodeURIComponent(data.email)}`);
+          return;
+        }
         throw new Error(data?.error || "Login failed");
       }
       // Refresh user context immediately after login to update UI
@@ -57,7 +63,6 @@ export default function LoginPage() {
       router.push("/");
     } catch (err: any) {
       setError(err?.message ?? "Login failed");
-    } finally {
       setLoading(false);
     }
   };

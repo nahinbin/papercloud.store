@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSession, verifyUser } from "@/lib/authDb";
+import { prisma } from "@/lib/prisma";
 
 // Username validation: only lowercase letters, numbers, and underscore
 function isValidUsername(username: string): boolean {
@@ -23,6 +24,52 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
   }
+
+  // Check if email is verified (get from database directly using raw SQL)
+  let emailVerifiedAt: Date | null = null;
+  let userEmail: string | null = null;
+  
+  try {
+    const emailVerificationResult = await prisma.$queryRaw<Array<{ 
+      email: string | null; 
+      email_verified_at: Date | null 
+    }>>`
+      SELECT email, email_verified_at 
+      FROM users 
+      WHERE id = ${user.id}
+    `;
+    
+    if (emailVerificationResult.length > 0) {
+      userEmail = emailVerificationResult[0].email;
+      emailVerifiedAt = emailVerificationResult[0].email_verified_at;
+    }
+  } catch (error: any) {
+    // If email_verified_at column doesn't exist, try without it
+    if (error?.code === "42703" || error?.message?.includes("does not exist")) {
+      const userResult = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          email: true,
+        },
+      });
+      userEmail = userResult?.email || null;
+      // If column doesn't exist, assume email is verified (for backward compatibility)
+      emailVerifiedAt = new Date();
+    } else {
+      throw error;
+    }
+  }
+
+  if (userEmail && !emailVerifiedAt) {
+    // Email not verified - return error
+    return NextResponse.json({ 
+      error: "Email verification required. Please check your email for the verification code.",
+      emailVerificationRequired: true,
+      userId: user.id,
+      email: userEmail,
+    }, { status: 403 });
+  }
+
   const token = await createSession(user.id);
   const res = NextResponse.json({ user });
   res.cookies.set("session", token, {

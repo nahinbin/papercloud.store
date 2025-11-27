@@ -160,13 +160,15 @@ export default function RegisterPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error || "Registration failed");
       }
-      // Refresh user context immediately after registration to update UI
-      await refreshUser();
-      // Then navigate to home
-      router.push("/");
+      const data = await res.json();
+      // Redirect to verification page with pendingId and email
+      if (data.pendingId && data.email) {
+        router.push(`/verify-email-otp?pendingId=${encodeURIComponent(data.pendingId)}&email=${encodeURIComponent(data.email)}`);
+      } else {
+        throw new Error("Invalid response from server");
+      }
     } catch (err: any) {
       setError(err?.message ?? "Registration failed");
-    } finally {
       setLoading(false);
     }
   };

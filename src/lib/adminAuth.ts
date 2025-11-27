@@ -34,6 +34,7 @@ export async function requirePermission(
 
 /**
  * Check if user is authenticated (any user, not just admin)
+ * Also checks if email is verified (required for account access)
  */
 export async function requireAuth(): Promise<AuthResult> {
   const cookieStore = await cookies();
@@ -42,6 +43,15 @@ export async function requireAuth(): Promise<AuthResult> {
   
   if (!user) {
     return { user: null, error: "Unauthorized", status: 401 };
+  }
+  
+  // Check if email is verified (required for account access)
+  if (user.email && !user.emailVerifiedAt) {
+    return { 
+      user: null, 
+      error: "Email verification required. Please verify your email to access your account.", 
+      status: 403 
+    };
   }
   
   return { user, error: null, status: 200 };
