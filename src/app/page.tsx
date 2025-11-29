@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import BannerSection from "./_components/BannerSection";
-import BannerSkeleton from "./_components/BannerSkeleton";
 import CataloguesSection from "./_components/CataloguesSection";
 import CataloguesSkeleton from "./_components/CataloguesSkeleton";
 import ProductsSection from "./_components/ProductsSection";
@@ -13,9 +12,8 @@ export const revalidate = 60;
 export default function Home() {
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-zinc-50 via-white to-white text-zinc-900" suppressHydrationWarning>
-      <Suspense fallback={<BannerSkeleton />}>
-        <BannerSection />
-      </Suspense>
+      {/* Banner loads immediately without Suspense for fastest render */}
+      <BannerSection />
       <div className="mx-auto max-w-6xl px-4">
         <Suspense fallback={<CataloguesSkeleton />}>
           <CataloguesSection />

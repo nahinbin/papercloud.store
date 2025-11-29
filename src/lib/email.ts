@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 import type { Order, OrderItem } from "@prisma/client";
 
 interface EmailPayload {
@@ -8,7 +8,7 @@ interface EmailPayload {
   text: string;
 }
 
-function isEmailConfigured() {
+export function isEmailConfigured() {
   return Boolean(process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL);
 }
 
@@ -75,6 +75,113 @@ function escapeHtml(input: string) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function toParagraphs(input: string) {
+  return input
+    .trim()
+    .split(/\n{2,}/)
+    .filter(Boolean)
+    .map((paragraph) => {
+      return `<p style="margin: 0 0 16px; color: #111827;">${escapeHtml(paragraph).replace(/\n/g, "<br />")}</p>`;
+    })
+    .join("");
+}
+
+export interface CustomEmailOptions {
+  to: string;
+  subject: string;
+  previewText?: string;
+  heading?: string;
+  intro?: string;
+  message: string;
+  button?: {
+    label: string;
+    url: string;
+  };
+  footerNote?: string;
+  recipientName?: string | null;
+}
+
+export async function sendCustomEmail(options: CustomEmailOptions) {
+  const heading = options.heading?.trim() || options.subject;
+  const intro = options.intro?.trim();
+  const message = options.message.trim();
+  const preview = options.previewText?.trim();
+  const footer = options.footerNote?.trim();
+  const recipientName = options.recipientName?.trim() || null;
+
+  const buttonHtml =
+    options.button && options.button.url
+      ? `
+        <p style="margin: 24px 0;">
+          <a
+            href="${escapeHtml(options.button.url)}"
+            style="
+              background: #111827;
+              color: #fff;
+              padding: 12px 20px;
+              border-radius: 10px;
+              text-decoration: none;
+              font-weight: 600;
+              display: inline-block;
+            "
+          >
+            ${escapeHtml(options.button.label || "View details")}
+          </a>
+        </p>
+      `
+      : "";
+
+  const introHtml = intro
+    ? `<p style="margin: 0 0 16px; color: #4b5563;">${escapeHtml(intro)}</p>`
+    : "";
+
+  const greetingHtml = recipientName
+    ? `<p style="margin: 0 0 16px; color: #111827;">Hi ${escapeHtml(recipientName)},</p>`
+    : "";
+
+  const html = `
+    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #0a0a0a; line-height: 1.6; background: #f9fafb; padding: 24px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" style="max-width: 640px; margin: 0 auto; width: 100%;">
+        <tr>
+          <td>
+            ${preview ? `<span style="display: none !important; color: transparent; height: 0; visibility: hidden;">${escapeHtml(preview)}</span>` : ""}
+            <div style="background: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; padding: 32px;">
+              <h1 style="font-size: 24px; margin: 0 0 16px; color: #111827;">${escapeHtml(heading)}</h1>
+              ${greetingHtml}
+              ${introHtml}
+              ${toParagraphs(message)}
+              ${buttonHtml}
+              ${
+                footer
+                  ? `<p style="margin-top: 32px; color: #6b7280; font-size: 12px;">${escapeHtml(footer)}</p>`
+                  : ""
+              }
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+
+  const textParts = [
+    heading,
+    recipientName ? `Hi ${recipientName},` : undefined,
+    intro,
+    message,
+    options.button?.url ? `${options.button.label || "View details"}: ${options.button.url}` : undefined,
+    footer,
+  ].filter(Boolean);
+
+  const text = textParts.join("\n\n");
+
+  await dispatchEmail({
+    to: options.to,
+    subject: options.subject,
+    html,
+    text,
+  });
 }
 
 export async function sendWelcomeEmail(options: { to: string; name?: string | null }) {

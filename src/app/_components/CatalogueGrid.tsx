@@ -44,7 +44,9 @@ export default function CatalogueGrid({ catalogues }: CatalogueGridProps) {
                   src={catalogue.imageUrl}
                   alt={catalogue.title}
                   fill
-                  loading="lazy"
+                  priority={index < 12}
+                  loading={index < 12 ? "eager" : "lazy"}
+                  fetchPriority={index < 12 ? "high" : "auto"}
                   className="object-cover"
                   sizes="(min-width: 1280px) 12.5vw, (min-width: 1024px) 14vw, (min-width: 768px) 16vw, (min-width: 640px) 18vw, 25vw"
                   placeholder="blur"

@@ -1,8 +1,7 @@
-import Image from "next/image";
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { listHomeProducts } from "@/lib/productDb";
 import { getUserBySessionToken } from "@/lib/authDb";
+import ProductsGrid from "./ProductsGrid";
 
 async function getCurrentUser() {
   const cookieStore = await cookies();
@@ -28,73 +27,7 @@ export default async function ProductsSection() {
         </span>
       </div>
 
-      {products.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-zinc-200 bg-white/60 p-10 text-center shadow-sm">
-          <p className="text-zinc-600">No products available yet.</p>
-          {isAdmin && (
-            <Link
-              href="/admin/products/new"
-              className="mt-4 inline-flex rounded-full border border-zinc-900/10 bg-zinc-900 px-5 py-2 text-sm font-medium text-white hover:bg-black"
-            >
-              Add the first product
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-          {products.map((product, index) => (
-            <Link
-              key={product.id}
-              href={`/products/${product.id}`}
-              prefetch={index < 6}
-              className={`group flex flex-col overflow-hidden rounded-2xl border shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${
-                product.stockQuantity === 0 
-                  ? "border-zinc-200 bg-zinc-50/50 opacity-75" 
-                  : "border-zinc-100 bg-white/70"
-              }`}
-            >
-              {product.imageUrl ? (
-                <div className="relative aspect-[20/21] w-full overflow-hidden bg-zinc-100">
-                  <Image
-                    src={product.imageUrl}
-                    alt={product.title}
-                    fill
-                    priority={index < 3}
-                    loading={index < 3 ? "eager" : "lazy"}
-                    sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
-                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    placeholder="blur"
-                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHhYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQADAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
-                  />
-                </div>
-              ) : (
-                <div className="flex aspect-[20/21] w-full items-center justify-center border border-dashed border-zinc-200 bg-zinc-50">
-                  <span className="text-sm text-zinc-400">No image</span>
-                </div>
-              )}
-              <div className="space-y-2 px-3 py-2.5">
-                {product.brand && (
-                  <p className="text-xs uppercase tracking-[0.23em] text-zinc-400">{product.brand}</p>
-                )}
-                <h3 className="line-clamp-2 text-lg font-semibold text-zinc-900 group-hover:text-black">
-                  {product.title}
-                </h3>
-                <p className="text-xl font-bold text-zinc-900">${product.price.toFixed(2)}</p>
-                {typeof product.stockQuantity === "number" && (
-                  <div className="flex items-center gap-2">
-                    <p className={`text-xs font-medium ${product.stockQuantity > 0 ? "text-emerald-600" : "text-red-600"}`}>
-                      {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : "Out of stock"}
-                    </p>
-                    {product.stockQuantity === 0 && (
-                      <span className="text-[10px] uppercase tracking-wider text-red-600 font-semibold">Sold Out</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+      <ProductsGrid products={products} isAdmin={isAdmin} />
     </section>
   );
 }

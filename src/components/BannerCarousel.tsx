@@ -89,9 +89,6 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
           const mobileSrc = banner.mobileImageUrl || banner.imageUrl || banner.desktopImageUrl;
           const desktopSrc = banner.desktopImageUrl || banner.imageUrl || banner.mobileImageUrl;
           const hasAnyImage = mobileSrc || desktopSrc;
-          
-          // Preload next banner image for smoother transitions
-          const shouldPreload = index === 1 && banners.length > 1;
 
           const BannerContent = (
             <div className="flex-shrink-0 w-screen relative overflow-hidden bg-gray-200 snap-start snap-always banner-item">
@@ -102,7 +99,8 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
                   alt={banner.title || "Banner"}
                   fill
                   priority={priority}
-                  fetchPriority={priority ? "high" : "auto"}
+                  fetchPriority={priority ? "high" : index === 1 ? "high" : "auto"}
+                  loading={priority ? "eager" : "lazy"}
                   className="object-cover md:hidden"
                   sizes="100vw"
                   placeholder="blur"
@@ -116,7 +114,8 @@ export default function BannerCarousel({ banners }: BannerCarouselProps) {
                   alt={banner.title || "Banner"}
                   fill
                   priority={priority}
-                  fetchPriority={priority ? "high" : "auto"}
+                  fetchPriority={priority ? "high" : index === 1 ? "high" : "auto"}
+                  loading={priority ? "eager" : "lazy"}
                   className="object-cover hidden md:block"
                   sizes="100vw"
                   placeholder="blur"

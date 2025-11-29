@@ -45,6 +45,9 @@ export const PERMISSIONS = {
   "roles.edit": { name: "Edit Roles", category: "admin" },
   "roles.delete": { name: "Delete Roles", category: "admin" },
   "roles.assign": { name: "Assign Roles", category: "admin" },
+
+  // Communications
+  "emails.send": { name: "Send Emails", category: "communications" },
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;

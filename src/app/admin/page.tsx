@@ -417,6 +417,42 @@ export default function AdminDashboard() {
                 </div>
               </div>
               )}
+
+              {/* Email Studio */}
+              {isAdmin || permissions.includes("emails.send") ? (
+              <Link
+                href="/admin/email"
+                className="rounded-xl sm:rounded-2xl border border-zinc-100 bg-white/80 p-4 sm:p-6 shadow-sm hover:shadow-md transition-all hover:border-zinc-200"
+              >
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <h2 className="text-base sm:text-xl font-semibold text-zinc-900">Email Studio</h2>
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12H8m0 0l4 4m-4-4l4-4m7 0V7a3 3 0 00-3-3H6a3 3 0 00-3 3v10a3 3 0 003 3h12a3 3 0 003-3v-1" />
+                  </svg>
+                </div>
+                <div className="flex items-center text-xs sm:text-sm font-medium text-black hover:underline">
+                  Send a custom email
+                  <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
+              ) : (
+              <div className="rounded-xl sm:rounded-2xl border border-zinc-100 bg-white/40 p-4 sm:p-6 shadow-sm opacity-50 cursor-not-allowed">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <h2 className="text-base sm:text-xl font-semibold text-zinc-500">Email Studio</h2>
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12H8m0 0l4 4m-4-4l4-4m7 0V7a3 3 0 00-3-3H6a3 3 0 00-3 3v10a3 3 0 003 3h12a3 3 0 003-3v-1" />
+                  </svg>
+                </div>
+                <div className="flex items-center text-xs sm:text-sm font-medium text-zinc-400">
+                  No Access
+                  <svg className="ml-2 h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+              </div>
+              )}
             </div>
           </>
         )}
