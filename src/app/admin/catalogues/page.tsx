@@ -381,7 +381,7 @@ export default function CataloguePage() {
                     className="mt-1 w-full rounded-lg border px-3 py-2"
                     placeholder="stationery"
                   />
-                  <p className="mt-1 text-xs text-zinc-500">Used for the internal category page URL: /catalogues/[slug]</p>
+                  <p className="mt-1 text-xs text-zinc-500">Used for the public category page URL: /[slug]</p>
                 </div>
               </div>
 
@@ -650,16 +650,16 @@ export default function CataloguePage() {
                 </div>
                 <h3 className="mt-1 text-lg font-semibold">{catalogue.title}</h3>
                 {catalogue.slug && (
-                  <p className="text-xs text-zinc-500">/catalogues/{catalogue.slug}</p>
+                  <p className="text-xs text-zinc-500">/{catalogue.slug}</p>
                 )}
                 {catalogue.description && <p className="text-sm text-zinc-600 mt-1">{catalogue.description}</p>}
                 {catalogue.linkUrl && <p className="mt-2 text-xs text-zinc-500 truncate">{catalogue.linkUrl}</p>}
                 {catalogue.content && <p className="mt-2 text-xs text-zinc-500 line-clamp-2">{catalogue.content}</p>}
 
                 <div className="mt-3 flex gap-2 text-xs text-zinc-500" onClick={(e) => e.stopPropagation()}>
-                  {(catalogue.slug || catalogue.linkUrl) && (
+                  {catalogue.slug && (
                     <Link
-                      href={catalogue.linkUrl || `/catalogues/${catalogue.slug || catalogue.id}`}
+                      href={`/${encodeURIComponent(catalogue.slug)}`}
                       className="underline hover:text-zinc-700"
                       prefetch={false}
                       onClick={(e) => e.stopPropagation()}

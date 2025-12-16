@@ -53,6 +53,63 @@ body {
   animation: fadeInUp 0.4s ease-out both;
 }
 
+/* Slide-in sidebar and soft fade overlay */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.slide-in-right {
+  animation: slideInRight 0.25s ease-out both;
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.slide-out-right {
+  animation: slideOutRight 0.25s ease-in both;
+}
+
+@keyframes fadeInSoft {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in-soft {
+  animation: fadeInSoft 0.25s ease-out both;
+}
+
+@keyframes fadeOutSoft {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.fade-out-soft {
+  animation: fadeOutSoft 0.25s ease-in both;
+}
+
 /* Performance optimizations */
 * {
   -webkit-font-smoothing: antialiased;

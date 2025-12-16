@@ -139,10 +139,7 @@ export default function AdminEmailPage() {
   // Collapsible sections state
   const [expandedSections, setExpandedSections] = useState({
     recipients: false,
-    subject: false,
-    content: false,
-    cta: false,
-    footer: false,
+    options: false,
   });
 
   const configured = config?.configured ?? false;
@@ -408,555 +405,306 @@ export default function AdminEmailPage() {
         )}
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr,1fr]">
-          <form onSubmit={handleSubmit} className="rounded-lg border border-zinc-200 bg-white shadow-sm overflow-hidden">
-            {/* Mail-like Header */}
-            <div className="border-b border-zinc-200 bg-zinc-50 px-6 py-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="flex-shrink-0">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-                        {config?.sender.name?.[0] || "P"}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-zinc-900">From:</span>
-                        <span className="text-sm text-zinc-700 truncate">
-                          {config?.sender.name || "PaperCloud"} <span className="text-zinc-500">&lt;{config?.sender.email || "sender@papercloud.com"}&gt;</span>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Recipients Section - Collapsible */}
-                  <div className="border-t border-zinc-200 pt-3 mt-3">
-                    <button
-                      type="button"
-                      onClick={() => toggleSection("recipients")}
-                      className="w-full flex items-center justify-between text-left"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium text-zinc-900">To:</span>
-                          {recipientMode === "single" && form.to ? (
-                            <span className="text-sm text-zinc-700">{form.to}</span>
-                          ) : recipientMode === "users" && selectedUserIds.length > 0 ? (
-                            <span className="text-sm text-zinc-700">{selectedUserIds.length} recipient{selectedUserIds.length !== 1 ? "s" : ""}</span>
-                          ) : recipientMode === "all" ? (
-                            <span className="text-sm text-zinc-700">All users ({recipients.length})</span>
-                          ) : (
-                            <span className="text-sm text-zinc-400 italic">Click to add recipients</span>
-                          )}
-                        </div>
-                        {form.recipientName && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-zinc-500">Greeting:</span>
-                            <span className="text-xs text-zinc-600">{form.recipientName}</span>
-                          </div>
-                        )}
-                      </div>
-                      <svg
-                        className={`h-5 w-5 text-zinc-400 transition-transform ${expandedSections.recipients ? "rotate-180" : ""}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                    
-                    {expandedSections.recipients && (
-                      <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-3">Recipient Type</p>
-                          <div className="inline-flex rounded-lg border border-zinc-200 bg-white p-1 text-xs font-medium">
-                            <button
-                              type="button"
-                              onClick={() => handleRecipientModeChange("single")}
-                              className={`px-4 py-2 rounded-md transition-colors ${
-                                recipientMode === "single" ? "bg-indigo-600 text-white shadow-sm" : "text-zinc-600 hover:bg-zinc-50"
-                              }`}
-                            >
-                              Single Email
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRecipientModeChange("users")}
-                              className={`px-4 py-2 rounded-md transition-colors ${
-                                recipientMode === "users" ? "bg-indigo-600 text-white shadow-sm" : "text-zinc-600 hover:bg-zinc-50"
-                              }`}
-                            >
-                              Select Users
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRecipientModeChange("all")}
-                              className={`px-4 py-2 rounded-md transition-colors ${
-                                recipientMode === "all" ? "bg-indigo-600 text-white shadow-sm" : "text-zinc-600 hover:bg-zinc-50"
-                              }`}
-                            >
-                              All Users
-                            </button>
-                          </div>
-                        </div>
+          <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg border border-zinc-200 overflow-hidden">
+            {/* Gmail-style Compose Window */}
+            <div className="bg-white">
+              {/* Header Bar */}
+              <div className="px-4 py-3 border-b border-zinc-200 bg-zinc-50/50 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-zinc-900">New Message</h2>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="p-1.5 hover:bg-zinc-200 rounded transition-colors"
+                    aria-label="Minimize"
+                  >
+                    <svg className="w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
 
-                        {recipientMode === "single" && (
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <label htmlFor="to" className="text-sm font-medium text-zinc-800">
-                                Email Address
-                              </label>
-                              {senderEmail && (
-                                <button
-                                  type="button"
-                                  onClick={handleUseSenderEmail}
-                                  className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+              {/* From Field - Always Visible */}
+              <div className="px-4 py-2 border-b border-zinc-100 flex items-center gap-3">
+                <span className="text-sm text-zinc-500 w-16 flex-shrink-0">From</span>
+                <span className="text-sm text-zinc-900">
+                  {config?.sender.name || "PaperCloud"} &lt;{config?.sender.email || "sender@papercloud.com"}&gt;
+                </span>
+              </div>
+
+              {/* To Field - Always Visible */}
+              <div className="px-4 py-2 border-b border-zinc-100">
+                <div className="flex items-start gap-3">
+                  <span className="text-sm text-zinc-500 w-16 flex-shrink-0 pt-2">To</span>
+                  <div className="flex-1">
+                    {recipientMode === "single" ? (
+                      <input
+                        id="to"
+                        type="email"
+                        required={recipientMode === "single"}
+                        value={form.to}
+                        onChange={handleChange("to")}
+                        className="w-full text-sm text-zinc-900 bg-transparent border-none outline-none py-1 placeholder:text-zinc-400"
+                        placeholder="Recipients"
+                      />
+                    ) : recipientMode === "users" ? (
+                      <div className="space-y-2">
+                        {selectedUserIds.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedUserIds.map((id) => {
+                              const user = recipients.find((u) => u.id === id);
+                              const label = user?.name || user?.username || user?.email || "User";
+                              return (
+                                <span
+                                  key={id}
+                                  className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs"
                                 >
-                                  Use sender email
-                                </button>
-                              )}
-                            </div>
-                            <input
-                              id="to"
-                              type="email"
-                              required={recipientMode === "single"}
-                              value={form.to}
-                              onChange={handleChange("to")}
-                              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors"
-                              placeholder="customer@example.com"
-                            />
+                                  {label}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeSelectedUser(id)}
+                                    className="hover:text-indigo-900"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              );
+                            })}
                           </div>
                         )}
-
-                        {recipientMode === "users" && (
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <label className="text-sm font-medium text-zinc-800">Choose Recipients</label>
-                              <span className="text-xs text-zinc-500">
-                                {selectedUserIds.length === 0
-                                  ? "Select one or many users"
-                                  : `${selectedUserIds.length} selected`}
-                              </span>
-                            </div>
-                            <input
-                              type="text"
-                              value={recipientSearch}
-                              onChange={handleRecipientSearchChange}
-                              placeholder="Search by name, username, or email"
-                              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors"
-                            />
-                            <div className="max-h-64 overflow-y-auto rounded-lg border border-zinc-200 bg-white divide-y divide-zinc-100">
-                              {recipientsLoading && (
-                                <p className="p-3 text-sm text-zinc-500">Loading users...</p>
-                              )}
-                              {!recipientsLoading && filteredRecipients.length === 0 && (
-                                <p className="p-3 text-sm text-zinc-500">No users match your search.</p>
-                              )}
-                              {!recipientsLoading &&
-                                filteredRecipients.map((user) => {
-                                  const isChecked = selectedUserIds.includes(user.id);
-                                  return (
-                                    <label
-                                      key={user.id}
-                                      className={`flex items-center gap-3 px-3 py-2.5 text-sm cursor-pointer transition-colors ${
-                                        isChecked ? "bg-indigo-50" : "hover:bg-zinc-50"
-                                      }`}
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
-                                        checked={isChecked}
-                                        onChange={() => toggleUserSelection(user.id)}
-                                      />
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-zinc-900 font-medium truncate">
-                                          {user.name || user.username || user.email}
-                                        </p>
-                                        <p className="text-xs text-zinc-500 truncate">{user.email}</p>
-                                      </div>
-                                      <span className="text-[10px] uppercase text-zinc-400 flex-shrink-0">
-                                        {new Date(user.createdAt).toLocaleDateString()}
-                                      </span>
-                                    </label>
-                                  );
-                                })}
-                            </div>
-
-                            {selectedUserIds.length > 0 && (
-                              <div className="flex flex-wrap gap-2 pt-2">
-                                {selectedUserIds.map((id) => {
-                                  const user = recipients.find((u) => u.id === id);
-                                  const label = user?.name || user?.username || user?.email || "User";
-                                  return (
-                                    <span
-                                      key={id}
-                                      className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-3 py-1 text-xs text-indigo-700 font-medium"
-                                    >
-                                      {label}
-                                      <button
-                                        type="button"
-                                        onClick={() => removeSelectedUser(id)}
-                                        className="text-indigo-500 hover:text-indigo-900 font-bold"
-                                        aria-label={`Remove ${label}`}
-                                      >
-                                        ×
-                                      </button>
-                                    </span>
-                                  );
-                                })}
-                              </div>
-                            )}
-
-                            <p className="text-xs text-zinc-500 pt-1">
-                              Individual emails will be sent via Brevo. Leave greeting blank to auto-use each user&apos;s name.
-                            </p>
+                        <input
+                          type="text"
+                          value={recipientSearch}
+                          onChange={handleRecipientSearchChange}
+                          onFocus={() => setExpandedSections((prev) => ({ ...prev, recipients: true }))}
+                          placeholder="Search recipients..."
+                          className="w-full text-sm text-zinc-900 bg-transparent border-none outline-none py-1 placeholder:text-zinc-400"
+                        />
+                        {(expandedSections.recipients || recipientSearch) && filteredRecipients.length > 0 && (
+                          <div className="max-h-48 overflow-y-auto border border-zinc-200 rounded-lg bg-white shadow-lg mt-1">
+                            {filteredRecipients.map((user) => {
+                              const isChecked = selectedUserIds.includes(user.id);
+                              return (
+                                <label
+                                  key={user.id}
+                                  className={`flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-zinc-50 ${
+                                    isChecked ? "bg-indigo-50" : ""
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 rounded border-zinc-300 text-indigo-600"
+                                    checked={isChecked}
+                                    onChange={() => toggleUserSelection(user.id)}
+                                  />
+                                  <div className="flex-1">
+                                    <p className="text-zinc-900 font-medium">{user.name || user.username || user.email}</p>
+                                    <p className="text-xs text-zinc-500">{user.email}</p>
+                                  </div>
+                                </label>
+                              );
+                            })}
                           </div>
                         )}
-
-                        {recipientMode === "all" && (
-                          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                            <p className="font-medium mb-1">Broadcast to All Users</p>
-                            <p>
-                              This will send the same email to every registered user with an email address.
-                              {recipients.length > 0 && (
-                                <span className="font-semibold"> Approx. {recipients.length} recipients.</span>
-                              )}
-                            </p>
-                          </div>
-                        )}
-
-                        <div>
-                          <label htmlFor="recipientName" className="text-sm font-medium text-zinc-800 mb-2 block">
-                            Greeting Name <span className="font-normal text-zinc-400">(optional)</span>
-                          </label>
-                          <input
-                            id="recipientName"
-                            type="text"
-                            value={form.recipientName}
-                            onChange={handleChange("recipientName")}
-                            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors"
-                            placeholder={recipientMode === "all" ? "Defaults to each user name if left blank" : "Taylor"}
-                          />
-                        </div>
                       </div>
+                    ) : (
+                      <span className="text-sm text-zinc-700 py-1">All users ({recipients.length})</span>
                     )}
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleRecipientModeChange("single");
+                          setExpandedSections((prev) => ({ ...prev, recipients: false }));
+                        }}
+                        className={`text-xs px-2 py-0.5 rounded ${recipientMode === "single" ? "bg-indigo-100 text-indigo-700" : "text-zinc-500 hover:text-zinc-700"}`}
+                      >
+                        Single
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleRecipientModeChange("users");
+                          setExpandedSections((prev) => ({ ...prev, recipients: !prev.recipients }));
+                        }}
+                        className={`text-xs px-2 py-0.5 rounded ${recipientMode === "users" ? "bg-indigo-100 text-indigo-700" : "text-zinc-500 hover:text-zinc-700"}`}
+                      >
+                        Select
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleRecipientModeChange("all");
+                          setExpandedSections((prev) => ({ ...prev, recipients: false }));
+                        }}
+                        className={`text-xs px-2 py-0.5 rounded ${recipientMode === "all" ? "bg-indigo-100 text-indigo-700" : "text-zinc-500 hover:text-zinc-700"}`}
+                      >
+                        All
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Subject Section - Collapsible */}
-            <div className="border-b border-zinc-200 bg-white">
-              <button
-                type="button"
-                onClick={() => toggleSection("subject")}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-zinc-50 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium text-zinc-900">Subject:</span>
-                    {form.subject ? (
-                      <span className="text-sm text-zinc-700 truncate">{form.subject}</span>
-                    ) : (
-                      <span className="text-sm text-zinc-400 italic">Click to add subject</span>
-                    )}
-                  </div>
-                  {form.previewText && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-zinc-500">Preview:</span>
-                      <span className="text-xs text-zinc-600 truncate">{form.previewText}</span>
-                    </div>
-                  )}
-                </div>
-                <svg
-                  className={`h-5 w-5 text-zinc-400 transition-transform flex-shrink-0 ${expandedSections.subject ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {expandedSections.subject && (
-                <div className="px-6 pb-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div>
-                    <label htmlFor="subject" className="text-sm font-medium text-zinc-800 mb-2 block">
-                      Subject Line <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="subject"
-                      type="text"
-                      required
-                      value={form.subject}
-                      onChange={handleChange("subject")}
-                      className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors"
-                      placeholder="Something exciting just happened"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="previewText" className="text-sm font-medium text-zinc-800 mb-2 block">
-                      Inbox Preview Text
-                    </label>
-                    <input
-                      id="previewText"
-                      type="text"
-                      value={form.previewText}
-                      onChange={handleChange("previewText")}
-                      className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors"
-                      placeholder="Snippet that shows next to the subject in inbox"
-                    />
-                    <p className="text-xs text-zinc-500 mt-1.5">This appears next to your subject line in most email clients</p>
-                  </div>
-                </div>
-              )}
-            </div>
+              {/* Subject Field - Always Visible */}
+              <div className="px-4 py-2 border-b border-zinc-100 flex items-center gap-3">
+                <span className="text-sm text-zinc-500 w-16 flex-shrink-0">Subject</span>
+                <input
+                  id="subject"
+                  type="text"
+                  required
+                  value={form.subject}
+                  onChange={handleChange("subject")}
+                  className="flex-1 text-sm text-zinc-900 bg-transparent border-none outline-none placeholder:text-zinc-400"
+                  placeholder="Subject"
+                />
+              </div>
 
-            {/* Content Section - Collapsible */}
-            <div className="border-b border-zinc-200 bg-white">
-              <button
-                type="button"
-                onClick={() => toggleSection("content")}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-zinc-50 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-zinc-900">Content:</span>
-                    {form.heading || form.message ? (
-                      <span className="text-sm text-zinc-700 truncate">
-                        {form.heading || form.message.substring(0, 50) + "..."}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-zinc-400 italic">Click to compose message</span>
-                    )}
-                  </div>
-                </div>
-                <svg
-                  className={`h-5 w-5 text-zinc-400 transition-transform flex-shrink-0 ${expandedSections.content ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {expandedSections.content && (
-                <div className="px-6 pb-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-
+              {/* Compose Area - Always Visible */}
+              <div className="px-4 py-3 min-h-[400px]">
+                <div className="space-y-4">
                   <div>
-                    <label htmlFor="heading" className="text-sm font-medium text-zinc-800 mb-2 block">
-                      Headline
-                    </label>
                     <input
                       id="heading"
                       type="text"
                       value={form.heading}
                       onChange={handleChange("heading")}
-                      className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors"
-                      placeholder="A short hero headline"
+                      className="w-full text-lg font-semibold text-zinc-900 bg-transparent border-none outline-none placeholder:text-zinc-400"
+                      placeholder="Heading (optional)"
                     />
                   </div>
-
                   <div>
-                    <label htmlFor="intro" className="text-sm font-medium text-zinc-800 mb-2 block">
-                      Intro Line <span className="font-normal text-zinc-400">(optional)</span>
-                    </label>
                     <textarea
                       id="intro"
                       value={form.intro}
                       onChange={handleChange("intro")}
-                      className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors resize-none"
-                      rows={2}
-                      placeholder="Set the tone with one sentence."
+                      className="w-full text-sm text-zinc-700 bg-transparent border-none outline-none resize-none placeholder:text-zinc-400"
+                      rows={1}
+                      placeholder="Intro line (optional)"
                     />
                   </div>
-
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label htmlFor="message" className="text-sm font-medium text-zinc-800">
-                        Message <span className="text-red-500">*</span>
-                      </label>
-                      <span className="text-xs text-zinc-400">Double line breaks = paragraphs</span>
-                    </div>
                     <textarea
                       id="message"
                       required
                       value={form.message}
                       onChange={handleChange("message")}
-                      className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors resize-none"
-                      rows={8}
-                      placeholder="Share the details..."
+                      className="w-full text-sm text-zinc-900 bg-transparent border-none outline-none resize-none min-h-[200px] placeholder:text-zinc-400"
+                      placeholder="Compose your message..."
                     />
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* CTA Section - Collapsible */}
-            <div className="border-b border-zinc-200 bg-white">
-              <button
-                type="button"
-                onClick={() => toggleSection("cta")}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-zinc-50 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-zinc-900">Call-to-Action:</span>
-                    {form.buttonLabel || form.buttonUrl ? (
-                      <span className="text-sm text-zinc-700">
-                        {form.buttonLabel || form.buttonUrl}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-zinc-400 italic">Click to add CTA button</span>
-                    )}
-                  </div>
-                </div>
-                <svg
-                  className={`h-5 w-5 text-zinc-400 transition-transform flex-shrink-0 ${expandedSections.cta ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {expandedSections.cta && (
-                <div className="px-6 pb-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="buttonLabel" className="text-sm font-medium text-zinc-800 mb-2 block">
-                        Button Label <span className="font-normal text-zinc-400">(optional)</span>
-                      </label>
-                      <input
-                        id="buttonLabel"
-                        type="text"
-                        value={form.buttonLabel}
-                        onChange={handleChange("buttonLabel")}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors"
-                        placeholder="View drop"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="buttonUrl" className="text-sm font-medium text-zinc-800 mb-2 block">
-                        Button URL
-                      </label>
-                      <input
-                        id="buttonUrl"
-                        type="url"
-                        value={form.buttonUrl}
-                        onChange={handleChange("buttonUrl")}
-                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors"
-                        placeholder="https://"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer Section - Collapsible */}
-            <div className="border-b border-zinc-200 bg-white">
-              <button
-                type="button"
-                onClick={() => toggleSection("footer")}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-zinc-50 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-zinc-900">Footer:</span>
-                    {form.footerNote ? (
-                      <span className="text-sm text-zinc-700 truncate">{form.footerNote.substring(0, 50)}{form.footerNote.length > 50 ? "..." : ""}</span>
-                    ) : (
-                      <span className="text-sm text-zinc-400 italic">Click to add footer note</span>
-                    )}
-                  </div>
-                </div>
-                <svg
-                  className={`h-5 w-5 text-zinc-400 transition-transform flex-shrink-0 ${expandedSections.footer ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {expandedSections.footer && (
-                <div className="px-6 pb-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div>
-                    <label htmlFor="footerNote" className="text-sm font-medium text-zinc-800 mb-2 block">
-                      Footer Note <span className="font-normal text-zinc-400">(optional)</span>
-                    </label>
-                    <textarea
-                      id="footerNote"
-                      value={form.footerNote}
-                      onChange={handleChange("footerNote")}
-                      className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors resize-none"
-                      rows={2}
-                      placeholder="Compliance info, unsubscribe instructions, etc."
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Status Bar */}
-            {status && (
-              <div className="bg-zinc-50 border-t border-zinc-200 px-6 py-3">
-                <div
-                  className={`rounded-lg border px-4 py-2.5 text-sm ${
-                    status.type === "success"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-rose-200 bg-rose-50 text-rose-800"
-                  }`}
-                >
-                  {status.message}
                 </div>
               </div>
-            )}
 
-            {/* Action Buttons */}
-            <div className="bg-white border-t border-zinc-200 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-zinc-500">
-                Emails send via Brevo using your configured sender profile.
-              </p>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 hover:border-zinc-400 transition-colors"
-                >
-                  Clear
+              {/* Optional Fields - Collapsible */}
+              <div className="px-4 py-2 border-t border-zinc-100 bg-zinc-50/30">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedSections((prev) => ({ ...prev, options: !prev.options }))}
+                    className="text-xs text-zinc-600 hover:text-zinc-900 flex items-center gap-1"
+                  >
+                  <svg className={`w-3 h-3 transition-transform ${expandedSections.options ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  Options
                 </button>
-                <button
-                  type="submit"
-                  disabled={sending || !configured}
-                  className={`inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors ${
-                    configured 
-                      ? "bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800" 
-                      : "bg-zinc-400 cursor-not-allowed"
-                  }`}
-                >
-                  {sending ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
-                      Send
-                    </>
-                  )}
-                </button>
+                {expandedSections.options && (
+                  <div className="mt-3 space-y-3 pt-3 border-t border-zinc-200">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="buttonLabel" className="block text-xs text-zinc-600 mb-1">Button Label</label>
+                        <input
+                          id="buttonLabel"
+                          type="text"
+                          value={form.buttonLabel}
+                          onChange={handleChange("buttonLabel")}
+                          className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          placeholder="View details"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="buttonUrl" className="block text-xs text-zinc-600 mb-1">Button URL</label>
+                        <input
+                          id="buttonUrl"
+                          type="url"
+                          value={form.buttonUrl}
+                          onChange={handleChange("buttonUrl")}
+                          className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          placeholder="https://"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="footerNote" className="block text-xs text-zinc-600 mb-1">Footer Note</label>
+                      <textarea
+                        id="footerNote"
+                        value={form.footerNote}
+                        onChange={handleChange("footerNote")}
+                        className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+                        rows={2}
+                        placeholder="Footer text (optional)"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="recipientName" className="block text-xs text-zinc-600 mb-1">Greeting Name</label>
+                      <input
+                        id="recipientName"
+                        type="text"
+                        value={form.recipientName}
+                        onChange={handleChange("recipientName")}
+                        className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        placeholder="Optional greeting name"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="previewText" className="block text-xs text-zinc-600 mb-1">Preview Text</label>
+                      <input
+                        id="previewText"
+                        type="text"
+                        value={form.previewText}
+                        onChange={handleChange("previewText")}
+                        className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        placeholder="Inbox preview text"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Status & Actions */}
+              {status && (
+                <div className="px-4 py-2 border-t border-zinc-200 bg-zinc-50">
+                  <div className={`text-xs px-3 py-1.5 rounded ${
+                    status.type === "success" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
+                  }`}>
+                    {status.message}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="px-4 py-3 border-t border-zinc-200 bg-white flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="submit"
+                    disabled={sending || !configured}
+                    className={`px-6 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      configured
+                        ? "bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                        : "bg-zinc-300 text-zinc-500 cursor-not-allowed"
+                    }`}
+                  >
+                    {sending ? "Sending..." : "Send"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
+                  >
+                    Discard
+                  </button>
+                </div>
+                <p className="text-xs text-zinc-500">Via Brevo</p>
               </div>
             </div>
           </form>

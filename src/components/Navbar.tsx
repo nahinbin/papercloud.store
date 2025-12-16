@@ -11,6 +11,7 @@ import Gravatar from "@/components/Gravatar";
 export default function Navbar() {
 	const { user, permissions, isAuthenticated, isLoading: userLoading, refreshUser } = useUser();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const [isMenuClosing, setIsMenuClosing] = useState(false);
 	const [isMounted, setIsMounted] = useState(false);
 	const { getItemCount } = useCart();
 	const cartItemCount = getItemCount();
@@ -45,14 +46,30 @@ export default function Navbar() {
 	// This prevents showing "login/register" when user is actually logged in
 	const isAuthed = user ? true : (userLoading ? null : false);
 
+	const closeMenu = () => {
+		// Trigger closing animation, then unmount after animation duration
+		setIsMenuClosing(true);
+		setTimeout(() => {
+			setIsMenuOpen(false);
+			setIsMenuClosing(false);
+		}, 250); // keep in sync with CSS animation duration
+	};
+
 	const handleLogout = async () => {
 		await fetch("/api/auth/logout", { method: "POST" });
-		setIsMenuOpen(false);
+		closeMenu();
 		await refreshUser();
 		location.reload();
 	};
 
-	const closeMenu = () => setIsMenuOpen(false);
+	const toggleMenu = () => {
+		if (isMenuOpen) {
+			closeMenu();
+		} else {
+			setIsMenuClosing(false);
+			setIsMenuOpen(true);
+		}
+	};
 
 	return (
 		<>
@@ -103,7 +120,7 @@ export default function Navbar() {
 					<div className="flex flex-1 justify-end">
 						{/* Hamburger Menu Button - Always visible */}
 						<button
-							onClick={() => setIsMenuOpen(!isMenuOpen)}
+							onClick={toggleMenu}
 							className="p-2 rounded hover:bg-zinc-50 transition-colors"
 							aria-label="Toggle menu"
 						>
@@ -141,16 +158,22 @@ export default function Navbar() {
 				</div>
 			</header>
 
-			{/* Menu Overlay with Blur */}
+			{/* Menu Overlay with Blur + Animations */}
 			{isMenuOpen && (
 				<>
 					{/* Blurred Backdrop */}
 					<div
-						className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity"
+						className={`fixed inset-0 bg-black/20 backdrop-blur-sm z-40 ${
+							isMenuClosing ? "fade-out-soft" : "fade-in-soft"
+						}`}
 						onClick={closeMenu}
 					/>
 					{/* Menu Panel */}
-					<nav className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 transform transition-transform">
+					<nav
+						className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 transform ${
+							isMenuClosing ? "slide-out-right" : "slide-in-right"
+						}`}
+					>
 						<div className="flex flex-col h-full">
 							{/* Menu Header with User Info */}
 							<div className="p-6 border-b border-zinc-100">

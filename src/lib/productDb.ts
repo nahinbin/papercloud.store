@@ -7,6 +7,22 @@ export type ProductSummary = Pick<
   "id" | "title" | "description" | "price" | "imageUrl" | "brand" | "stockQuantity"
 >;
 
+type HomeProductPage = {
+  products: ProductSummary[];
+  nextCursor: string | null;
+  total: number;
+};
+
+const mapHomeProduct = (product: any): ProductSummary => ({
+  id: product.id,
+  title: product.title,
+  description: product.description ?? undefined,
+  price: product.price,
+  imageUrl: product.imageData ? `/api/products/${product.id}/image` : (product.imageUrl ?? undefined),
+  brand: product.brand ?? undefined,
+  stockQuantity: product.stockQuantity ?? undefined,
+});
+
 export async function createProduct(input: Omit<Product, "id" | "createdAt" | "updatedAt">): Promise<Product> {
   const product = await prisma.product.create({
     data: {
@@ -139,17 +155,24 @@ export async function listProducts(includeDrafts: boolean = false): Promise<Prod
   }));
 }
 
-// Removed caching to ensure immediate updates since home page is force-dynamic
-async function getHomeProducts(limit: number) {
-  let products;
+// Removed caching to ensure immediate updates since home page is force-dynamic.
+// Supports cursor-based pagination so we don't have to load every product at once.
+async function getOrderedHomeProducts(limitPlusOne: number, cursor?: string) {
+  let products: any[];
   try {
     // Try to use order field if Prisma Client has been regenerated
     products = await prisma.product.findMany({
       where: {
         isDraft: false, // Exclude drafts from public view
       },
-      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
-      take: limit,
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }, { id: "asc" }],
+      take: limitPlusOne,
+      ...(cursor
+        ? {
+            cursor: { id: cursor },
+            skip: 1, // Skip the cursor item itself
+          }
+        : {}),
       select: {
         id: true,
         title: true,
@@ -200,26 +223,42 @@ async function getHomeProducts(limit: number) {
         }
         return b.createdAt.getTime() - a.createdAt.getTime();
       });
-      
-      products = allProducts.slice(0, limit);
+
+      // Apply cursor pagination manually
+      const startIndex = cursor ? allProducts.findIndex((p) => p.id === cursor) + 1 : 0;
+      const safeStart = Math.max(startIndex, 0);
+      products = allProducts.slice(safeStart, safeStart + limitPlusOne);
     } else {
       throw error;
     }
   }
 
-  return products.map((product) => ({
-    id: product.id,
-    title: product.title,
-    description: product.description ?? undefined,
-    price: product.price,
-    imageUrl: product.imageData ? `/api/products/${product.id}/image` : (product.imageUrl ?? undefined),
-    brand: product.brand ?? undefined,
-    stockQuantity: product.stockQuantity ?? undefined,
-  }));
+  return products.map(mapHomeProduct);
 }
 
 export async function listHomeProducts(limit = 100): Promise<ProductSummary[]> {
-  return getHomeProducts(limit);
+  const { products } = await listHomeProductsPage(limit);
+  return products;
+}
+
+export async function listHomeProductsPage(limit = 12, cursor?: string): Promise<HomeProductPage> {
+  const pageSize = Math.max(4, Math.min(limit, 40)); // keep pages reasonable
+  const take = pageSize + 1; // fetch one extra to know if there's another page
+
+  const [products, total] = await Promise.all([
+    getOrderedHomeProducts(take, cursor),
+    prisma.product.count({ where: { isDraft: false } }),
+  ]);
+
+  const hasNext = products.length > pageSize;
+  const items = hasNext ? products.slice(0, -1) : products;
+  const nextCursor = hasNext ? items[items.length - 1]?.id ?? null : null;
+
+  return {
+    products: items,
+    nextCursor,
+    total,
+  };
 }
 
 const cachedProductById = unstable_cache(

@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 import { getCatalogueWithProducts } from "@/lib/catalogueDb";
 import type { ProductSummary } from "@/lib/productDb";
 import ProductsGrid from "@/app/_components/ProductsGrid";
@@ -8,7 +7,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 
 export const revalidate = 300; // Revalidate every 5 minutes (data is cached in DB layer)
 
-export default async function CataloguePage({
+export default async function CategorySlugPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
@@ -80,4 +79,5 @@ export default async function CataloguePage({
     </div>
   );
 }
+
 

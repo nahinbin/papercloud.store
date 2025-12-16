@@ -141,7 +141,13 @@ export async function POST(request: Request) {
   }
 
   if (recipientMode === "users") {
-    const uniqueUserIds = Array.from(new Set(userIds.filter((id: unknown) => typeof id === "string" && id.trim())));
+    const uniqueUserIds: string[] = Array.from(
+      new Set(
+        (userIds as unknown[]).filter(
+          (id): id is string => typeof id === "string" && Boolean((id as string).trim())
+        )
+      )
+    );
 
     if (!uniqueUserIds.length) {
       return createErrorResponse("Select at least one valid user", 400);

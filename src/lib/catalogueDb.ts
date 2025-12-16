@@ -230,6 +230,15 @@ export async function deleteCatalogue(id: string): Promise<void> {
   await (prisma as any).catalogue.delete({ where: { id } });
 }
 
+function toTitleMatch(value: string) {
+  const decoded = decodeURIComponent(value || "");
+  const spaceReplaced = decoded.replace(/-/g, " ");
+  return {
+    decoded,
+    spaceReplaced,
+  };
+}
+
 export async function getCatalogueWithProducts(identifier: string) {
   const cachedFn = unstable_cache(
     async (id: string) => {
@@ -237,11 +246,16 @@ export async function getCatalogueWithProducts(identifier: string) {
         return null;
       }
 
+      const { decoded, spaceReplaced } = toTitleMatch(id);
+
       const catalogue = await (prisma as any).catalogue.findFirst({
         where: {
           OR: [
             { slug: id },
             { id: id },
+            { slug: decoded },
+            { title: { equals: decoded, mode: "insensitive" } },
+            { title: { equals: spaceReplaced, mode: "insensitive" } },
           ],
         },
         include: {

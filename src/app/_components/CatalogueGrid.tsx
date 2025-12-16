@@ -15,11 +15,21 @@ interface CatalogueGridProps {
 export default function CatalogueGrid({ catalogues }: CatalogueGridProps) {
   const [showAll, setShowAll] = useState(false);
 
+  const slugify = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      || value;
+
   return (
     <>
       <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8">
         {catalogues.map((catalogue, index) => {
-          const href = catalogue.linkUrl || `/catalogues/${encodeURIComponent(catalogue.slug ?? catalogue.id)}`;
+          const derivedSlug = slugify(catalogue.slug ?? catalogue.title ?? catalogue.id);
+          const slug = encodeURIComponent(derivedSlug);
+          const href = `/${slug}`;
           const beyondMobileLimit = index >= MOBILE_LIMIT;
           const beyondDesktopLimit = index >= DESKTOP_LIMIT;
 
@@ -69,7 +79,7 @@ export default function CatalogueGrid({ catalogues }: CatalogueGridProps) {
         })}
       </div>
 
-      {(catalogues.length > MOBILE_LIMIT || catalogues.length > DESKTOP_LIMIT) && (
+      {catalogues.length > DESKTOP_LIMIT && (
         <div className="mt-6 text-center">
           <button
             type="button"
