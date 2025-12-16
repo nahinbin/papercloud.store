@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Skeleton } from "@/components/LoadingSkeletons";
 import { useCart } from "@/contexts/CartContext";
 import { useUser } from "@/contexts/UserContext";
@@ -13,12 +13,33 @@ export default function Navbar() {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [isMenuClosing, setIsMenuClosing] = useState(false);
 	const [isMounted, setIsMounted] = useState(false);
+	const [isHidden, setIsHidden] = useState(false);
+	const lastScrollY = useRef(0);
 	const { getItemCount } = useCart();
 	const cartItemCount = getItemCount();
 
 	// Prevent hydration mismatch by only showing cart count after mount
 	useEffect(() => {
 		setIsMounted(true);
+	}, []);
+
+	// Hide navbar when scrolling down past half the viewport, show when scrolling up
+	useEffect(() => {
+		const handleScroll = () => {
+			const current = window.scrollY;
+			const threshold = window.innerHeight / 2;
+
+			if (current > threshold && current > lastScrollY.current) {
+				setIsHidden(true);
+			} else if (current <= threshold || current < lastScrollY.current) {
+				setIsHidden(false);
+			}
+
+			lastScrollY.current = current;
+		};
+
+		window.addEventListener("scroll", handleScroll, { passive: true });
+		return () => window.removeEventListener("scroll", handleScroll);
 	}, []);
 
 	// Calculate admin status from user data
@@ -73,7 +94,12 @@ export default function Navbar() {
 
 	return (
 		<>
-			<header className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60" suppressHydrationWarning>
+			<header
+				className={`sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 transition-transform duration-300 ${
+					isHidden ? "-translate-y-full" : "translate-y-0"
+				}`}
+				suppressHydrationWarning
+			>
 				<div className="mx-auto flex max-w-6xl items-center px-4 py-3 gap-4" suppressHydrationWarning>
 					<div className="flex flex-1 justify-start">
 						<Link

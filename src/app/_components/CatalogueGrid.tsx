@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { CatalogueSummary } from "@/lib/catalogueDb";
@@ -14,6 +14,22 @@ interface CatalogueGridProps {
 
 export default function CatalogueGrid({ catalogues }: CatalogueGridProps) {
   const [showAll, setShowAll] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
+    const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      setIsMobile(event.matches);
+    };
+
+    // Set initial value and subscribe to changes
+    handleChange(mediaQuery);
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  const activeLimit = isMobile ? MOBILE_LIMIT : DESKTOP_LIMIT;
 
   const slugify = (value: string) =>
     value
@@ -33,14 +49,11 @@ export default function CatalogueGrid({ catalogues }: CatalogueGridProps) {
           const beyondMobileLimit = index >= MOBILE_LIMIT;
           const beyondDesktopLimit = index >= DESKTOP_LIMIT;
 
-          let visibilityClass = "";
-          if (!showAll) {
-            if (beyondDesktopLimit) {
-              visibilityClass = "hidden";
-            } else if (beyondMobileLimit) {
-              visibilityClass = "hidden lg:block";
-            }
-          }
+          const shouldHide =
+            !showAll &&
+            ((isMobile && beyondMobileLimit) || (!isMobile && beyondDesktopLimit));
+
+          const visibilityClass = shouldHide ? "hidden" : "";
 
           return (
             <Link
@@ -79,7 +92,7 @@ export default function CatalogueGrid({ catalogues }: CatalogueGridProps) {
         })}
       </div>
 
-      {catalogues.length > DESKTOP_LIMIT && (
+      {catalogues.length > activeLimit && (
         <div className="mt-6 text-center">
           <button
             type="button"

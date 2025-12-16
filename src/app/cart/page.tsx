@@ -3,17 +3,27 @@
 import { useCart } from "@/contexts/CartContext";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+
+const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, getTotal, clearCart, isLoading } = useCart();
   const router = useRouter();
+  const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [isEntering, setIsEntering] = useState(true);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    setIsEntering(true);
+    const timer = setTimeout(() => setIsEntering(false), 800);
+    return () => clearTimeout(timer);
+  }, [pathname]);
 
   // Prevent hydration mismatch by not rendering cart content until mounted
   if (!mounted || isLoading) {
@@ -31,13 +41,14 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-screen w-full bg-gradient-to-b from-zinc-50 via-white to-white text-zinc-900">
-        <div className="mx-auto max-w-4xl px-6 py-16">
+        <div className="mx-auto max-w-4xl px-4 py-12">
           <div className="rounded-3xl border border-zinc-100 bg-white/80 p-10 text-center shadow-sm">
-            <h1 className="text-3xl font-semibold mb-4">Shopping cart</h1>
-            <p className="text-zinc-600 mb-6">Your cart is empty.</p>
+            <h1 className="mb-2 text-sm uppercase tracking-[0.3em] text-zinc-400">Cart</h1>
+            <h2 className="mb-4 text-3xl font-semibold">Shopping cart</h2>
+            <p className="mb-6 text-zinc-600">Your cart is empty.</p>
             <Link
               href="/"
-              className="inline-flex items-center rounded-full border border-zinc-900/10 bg-zinc-900 px-6 py-3 text-sm font-medium text-white hover:bg-black"
+              className="inline-flex items-center justify-center rounded-full border border-zinc-900/10 bg-zinc-900 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-black"
             >
               Continue shopping
             </Link>
@@ -62,24 +73,27 @@ export default function CartPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-zinc-50 via-white to-white text-zinc-900">
-      <div className="mx-auto max-w-4xl px-6 py-16">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">Cart</p>
-            <h1 className="text-3xl font-semibold">Shopping cart</h1>
-          </div>
-          <span className="text-sm text-zinc-500">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
+    <div className={`min-h-screen w-full bg-gradient-to-b from-zinc-50 via-white to-white text-zinc-900 pb-24 ${isEntering ? "cart-page-enter" : ""}`}>
+      <div className="mx-auto max-w-4xl px-4 py-6">
+        <div className="mb-6 flex flex-col gap-2">
+          <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">Cart</p>
         </div>
 
-        <div className="space-y-4 mb-8">
+        <div className="mb-8 space-y-3">
           {items.map((item) => (
             <div
               key={item.productId}
-              className="flex gap-4 rounded-3xl border border-zinc-100 bg-white/80 p-4 shadow-sm flex-col sm:flex-row"
+              className="relative flex gap-3 rounded-2xl border border-zinc-100 bg-white p-3 shadow-sm transition-all hover:shadow-md"
             >
-              {item.imageUrl && (
-                <div className="relative w-full h-48 rounded-2xl overflow-hidden sm:w-32 sm:h-32 flex-shrink-0">
+              <button
+                onClick={() => handleRemove(item.productId)}
+                className="absolute right-3 top-3 text-[11px] font-semibold text-red-500 underline-offset-4 transition-colors hover:text-red-600 hover:underline"
+                type="button"
+              >
+                Remove
+              </button>
+              {item.imageUrl ? (
+                <div className="relative -m-3 mr-3 flex-shrink-0 self-stretch w-24 overflow-hidden rounded-l-2xl">
                   <Image
                     src={item.imageUrl}
                     alt={item.title}
@@ -88,97 +102,72 @@ export default function CartPage() {
                     unoptimized={item.imageUrl.startsWith("http")}
                   />
                 </div>
-              )}
-              {!item.imageUrl && (
-                <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 sm:h-32 sm:w-32 flex-shrink-0">
-                  <span className="text-xs uppercase tracking-[0.3em] text-zinc-400">No media</span>
+              ) : (
+                <div className="flex -m-3 mr-3 w-24 flex-shrink-0 items-center justify-center self-stretch rounded-l-2xl border border-dashed border-zinc-200 bg-zinc-50 text-[10px] uppercase tracking-[0.3em] text-zinc-400">
+                  No media
                 </div>
               )}
-              <div className="flex-1 space-y-3">
-                <div>
-                  <h3 className="font-semibold text-lg">{item.title}</h3>
-                  <p className="text-zinc-600">${item.price.toFixed(2)}</p>
+
+              <div className="flex flex-1 flex-col gap-3">
+                <div className="min-w-0">
+                  <h3 className="line-clamp-2 text-sm font-semibold leading-tight">{item.title}</h3>
                   {item.stockQuantity !== undefined && (
-                    <p className={`text-xs mt-1 ${item.stockQuantity === 0 ? "text-red-600" : item.stockQuantity <= 5 ? "text-orange-600" : "text-zinc-500"}`}>
-                      {item.stockQuantity === 0 
-                        ? "Out of stock" 
-                        : item.stockQuantity <= 5 
-                        ? `Only ${item.stockQuantity} left` 
+                    <p
+                      className={`text-xs ${item.stockQuantity === 0 ? "text-red-600" : item.stockQuantity <= 5 ? "text-orange-600" : "text-zinc-500"}`}
+                    >
+                      {item.stockQuantity === 0
+                        ? "Out of stock"
+                        : item.stockQuantity <= 5
+                        ? `Only ${item.stockQuantity} left`
                         : `${item.stockQuantity} in stock`}
                     </p>
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <label className="text-sm text-zinc-500">Quantity</label>
-                  <div className="flex items-center gap-2 rounded-full border border-zinc-200 px-2 py-1">
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
                     <button
                       onClick={() => handleQuantityChange(item.productId, item.quantity - 1)}
-                      className="h-8 w-8 rounded-full border border-transparent text-lg hover:bg-zinc-50 transition-colors flex items-center justify-center"
+                      className="flex h-8 w-8 items-center justify-center rounded-l-lg text-base text-zinc-600 transition-colors hover:bg-zinc-50"
                       type="button"
                     >
                       −
                     </button>
-                    <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                    <span className="w-9 text-center text-sm font-semibold text-zinc-900">{item.quantity}</span>
                     <button
                       onClick={() => handleQuantityChange(item.productId, item.quantity + 1)}
                       disabled={item.stockQuantity !== undefined && item.quantity >= item.stockQuantity}
-                      className="h-8 w-8 rounded-full border border-transparent text-lg hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent flex items-center justify-center"
+                      className="flex h-8 w-8 items-center justify-center rounded-r-lg text-base text-zinc-600 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
                       title={item.stockQuantity !== undefined && item.quantity >= item.stockQuantity ? "Maximum quantity reached" : ""}
                       type="button"
                     >
                       +
                     </button>
                   </div>
-                  {item.stockQuantity !== undefined && item.quantity >= item.stockQuantity && (
-                    <p className="text-xs text-red-600">Maximum quantity reached</p>
-                  )}
                 </div>
               </div>
-              <div className="text-right flex flex-col justify-between">
-                <p className="font-semibold mb-2 text-lg">
-                  ${(item.price * item.quantity).toFixed(2)}
-                </p>
-                <button
-                  onClick={() => handleRemove(item.productId)}
-                  className="text-sm text-red-500 hover:text-red-600 transition-colors"
-                  type="button"
-                >
-                  Remove
-                </button>
+
+              <div className="absolute bottom-3 right-3">
+                <p className="text-base font-semibold text-zinc-900">{formatCurrency(item.price * item.quantity)}</p>
               </div>
             </div>
           ))}
         </div>
+      </div>
 
-        <div className="rounded-3xl border border-zinc-100 bg-white/80 p-6 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-            <span className="text-xl font-semibold">Total</span>
-            <span className="text-3xl font-bold tracking-tight">${getTotal().toFixed(2)}</span>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/"
-              className="flex-1 rounded-full border border-zinc-200 px-6 py-3 text-center text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
-            >
-              Continue shopping
-            </Link>
-            <button
-              onClick={() => {
-                if (confirm("Are you sure you want to clear your cart?")) {
-                  clearCart();
-                }
-              }}
-              className="rounded-full border border-zinc-200 px-6 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
-              type="button"
-            >
-              Clear cart
-            </button>
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-200 bg-white shadow-lg">
+        <div className="mx-auto max-w-4xl px-4 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col">
+              <span className="text-xs text-zinc-500">Total</span>
+              <span className="text-xl font-bold text-zinc-900">{formatCurrency(getTotal())}</span>
+            </div>
             <button
               onClick={() => router.push("/checkout")}
-              className="flex-1 rounded-full border border-zinc-900/10 bg-zinc-900 px-6 py-3 text-sm font-medium text-white hover:bg-black transition-colors"
+              className="rounded-lg bg-zinc-900 px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-black"
               type="button"
             >
-              Proceed to checkout
+              Checkout
             </button>
           </div>
         </div>
